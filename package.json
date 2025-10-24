@@ -12,7 +12,7 @@
     "react-dom": "^18.3.1",
     "framer-motion": "^10.16.5",
     "lucide-react": "^0.366.0"
-    "canvas-confetti": "^1.9.3",
+    "canvas-confetti": "^1.9.3"
 
   },
   "devDependencies": {
@@ -20,4 +20,5 @@
     "vite": "^5.4.0"
   }
 }
+
 
