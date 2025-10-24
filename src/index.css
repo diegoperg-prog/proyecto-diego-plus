@@ -1,157 +1,153 @@
-/* ---------- NUEVOS ELEMENTOS ---------- */
-
-/* Input de recompensa */
-.reward-input {
-  width: 100%;
-  margin-top: 8px;
-  background-color: #222;
-  border: none;
-  border-radius: 10px;
+body {
+  background-color: #000;
   color: #fff;
-  padding: 10px 12px;
-  font-size: 15px;
-  outline: none;
-  text-align: center;
-  transition: background-color 0.3s;
-}
-
-.reward-input::placeholder {
-  color: #888;
-}
-
-.reward-input:focus {
-  background-color: #333;
-}
-
-/* Botón de calendario (📅) */
-.circle-btn:nth-child(3) {
-  color: #ffcc00;
-}
-
-/* Animación de confeti al desbloquear recompensa */
-@keyframes reward-pop {
-  0% {
-    transform: scale(0.9);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.reward-alert {
-  animation: reward-pop 0.8s ease-out;
-  background-color: #1c1c1c;
-  border: 2px solid #4caf50;
-  border-radius: 16px;
-  padding: 20px;
-  color: #fff;
-  font-weight: 600;
-  box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
-  text-align: center;
-}
-
-/* Mensaje motivacional */
-.motivation {
-  font-size: 0.95rem;
-  color: #ffcc00;
-  margin-bottom: 12px;
-  font-weight: 500;
-  text-align: center;
-  transition: opacity 0.4s ease;
-}
-
-/* Ajustes visuales en modal calendario */
-.modal-card h2 {
-  font-size: 1.3rem;
-  color: #ffcc00;
-  margin-bottom: 10px;
-}
-
-.modal-card p {
-  color: #ddd;
-  margin: 6px 0;
-}
-
-/* Ajuste responsive */
-@media (max-width: 480px) {
-  .reward-input {
-    font-size: 14px;
-  }
-
-  .modal-card {
-    padding: 18px;
-  }
-
-  .modal-card h2 {
-    font-size: 1.2rem;
-  }
-}
-/* ---------- HISTÓRICO REAL ---------- */
-.bars-container {
+  font-family: "Poppins", sans-serif;
+  margin: 0;
+  padding: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  height: 120px;
-  margin: 20px 0 10px;
-  padding: 0 10px;
+  justify-content: center;
+  align-items: center;
 }
 
-.bar-group {
+.app-container {
+  min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-between;
+  padding: 20px 10px;
+  background-color: #000;
 }
 
-.bar {
-  width: 20px;
-  background-color: #4caf50;
-  border-radius: 6px 6px 0 0;
-  transition: height 0.6s ease;
+.app-logo {
+  width: 100px;
+  margin-top: 20px;
+  opacity: 0.9;
 }
 
-.bar-label {
-  margin-top: 6px;
+.points-display {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.daily-points {
+  font-size: 64px;
+  font-weight: 800;
+  color: #4caf50;
+  position: relative;
+}
+
+.recent-gain {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 24px;
+}
+
+.points-subtitle {
+  color: #bbb;
+  font-size: 16px;
+  margin-top: 4px;
+}
+
+.weekly-points {
+  color: #f5c542;
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.activity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 90%;
+  max-width: 350px;
+  margin-top: 10px;
+}
+
+.activity-button {
+  background-color: #111;
+  color: #fff;
+  border: none;
+  border-radius: 18px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.activity-button:hover {
+  background-color: #222;
+}
+
+.activity-points {
   font-size: 13px;
-  color: #aaa;
+  color: #4caf50;
+  margin-top: 3px;
 }
 
-/* ---------- ANIMACIÓN DE REINICIO ---------- */
-.reset-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.85);
+.bottom-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  margin-bottom: 30px;
+}
+
+.round-button {
+  background-color: #111;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
 }
 
-.reset-message {
-  color: #fff;
-  font-size: 1.3rem;
-  font-weight: 600;
+.round-button:hover {
+  background-color: #222;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background-color: #111;
+  padding: 25px;
+  border-radius: 20px;
+  width: 80%;
+  max-width: 320px;
   text-align: center;
-  background: #1c1c1c;
-  padding: 20px 30px;
-  border-radius: 16px;
-  border: 2px solid #4caf50;
-  box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
-  animation: fadeInUp 1.2s ease-out;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.modal-button {
+  background-color: #4caf50;
+  color: black;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 12px;
+  font-weight: bold;
+  margin-top: 10px;
+  width: 100%;
+  cursor: pointer;
 }
 
+.modal-button:hover {
+  background-color: #45a049;
+}
