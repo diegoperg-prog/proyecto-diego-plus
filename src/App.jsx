@@ -21,13 +21,16 @@ export default function App() {
     { label: "Aprendí algo", pts: 5 },
   ];
 
-  const audio = new Audio();
-audio.src = "/sound/pop.ogg";
-audio.type = "audio/ogg";
-audio.volume = 0.4;
-audio.play();
+  // 🔊 Reproduce un sonido al sumar puntos
+  const playSound = () => {
+    const audio = new Audio();
+    audio.src = "/sound/pop.ogg";
+    audio.type = "audio/ogg";
+    audio.volume = 0.4;
+    audio.play().catch(() => {});
   };
 
+  // 📈 Sumar puntos y mostrar animación + sonido
   const addPoints = (pts) => {
     setDailyPoints((p) => p + pts);
     setWeeklyPoints((p) => p + pts);
@@ -174,4 +177,3 @@ audio.play();
     </div>
   );
 }
-
