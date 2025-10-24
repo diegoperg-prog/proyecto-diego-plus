@@ -4,17 +4,17 @@ import { Settings, BarChart3, ArrowLeft } from "lucide-react";
 import "./index.css";
 
 export default function App() {
-  const STORAGE_KEY = "diegoPlusDataV2";
+  const STORAGE_KEY = "diegoPlusDataV22";
 
   const [dailyPoints, setDailyPoints] = useState(0);
   const [weeklyPoints, setWeeklyPoints] = useState(0);
   const [recentGain, setRecentGain] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
-  const [viewMode, setViewMode] = useState("week"); // week | month
-  const [records, setRecords] = useState([]); // { date, points }
+  const [viewMode, setViewMode] = useState("week");
+  const [records, setRecords] = useState([]);
 
-  // ✅ Cargar datos guardados
+  // ✅ Cargar progreso guardado
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -33,13 +33,12 @@ export default function App() {
     );
   }, [dailyPoints, weeklyPoints, records]);
 
-  // 📆 Registrar automáticamente el cambio de día
+  // 📆 Registrar cambio de día
   useEffect(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
     const lastDate = localStorage.getItem("diegoPlusLastDate");
 
     if (lastDate && lastDate !== todayStr) {
-      // Guardar puntos del día anterior
       if (dailyPoints > 0) {
         setRecords((prev) => [
           ...prev.filter((r) => r.date !== lastDate),
@@ -82,7 +81,7 @@ export default function App() {
     setTimeout(() => setRecentGain(null), 1000);
   };
 
-  // 🔢 Filtrar registros por rango temporal
+  // 🔢 Filtrar registros según vista semanal o mensual
   const getFilteredRecords = () => {
     const now = new Date();
     const cutoff = new Date(
@@ -90,10 +89,12 @@ export default function App() {
     );
     const filtered = records.filter((r) => new Date(r.date) >= cutoff);
 
-    // Rellenar días vacíos
+    const totalDays = viewMode === "week" ? 7 : 30;
     const allDays = [];
-    for (let i = 0; i < (viewMode === "week" ? 7 : 30); i++) {
-      const d = new Date(now.getTime() - (viewMode === "week" ? 6 - i : 29 - i) * 24 * 60 * 60 * 1000);
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(
+        now.getTime() - (totalDays - 1 - i) * 24 * 60 * 60 * 1000
+      );
       const ds = d.toISOString().slice(0, 10);
       const found = filtered.find((r) => r.date === ds);
       allDays.push({ date: ds, points: found ? found.points : 0 });
@@ -102,6 +103,24 @@ export default function App() {
   };
 
   const filtered = getFilteredRecords();
+
+  // 📊 Estadísticas (promedio, récord, racha)
+  const calcStats = () => {
+    const points = filtered.map((r) => r.points);
+    const total = points.reduce((a, b) => a + b, 0);
+    const avg = points.length ? (total / points.length).toFixed(1) : 0;
+    const max = Math.max(...points, 0);
+
+    let streak = 0;
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (points[i] > 0) streak++;
+      else break;
+    }
+
+    return { avg, max, streak };
+  };
+
+  const { avg, max, streak } = calcStats();
 
   return (
     <div className="app-container">
@@ -165,63 +184,77 @@ export default function App() {
         </motion.button>
       </div>
 
-{/* ⚙️ MODAL AJUSTES */}
-<AnimatePresence>
-  {showSettings && (
-    <motion.div
-      className="modal-bg"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div
-        className="modal-card"
-        initial={{ scale: 0.9 }}
-        animate={{ scale: 1 }}
-        exit={{ scale: 0.9 }}
-      >
-        <h2>⚙️ Ajustes</h2>
-        <ul>
-          <li>🔊 Sonido – On</li>
-          <li>📳 Vibración – On</li>
-          <li>💾 Guardado automático – Activo</li>
-        </ul>
+      {/* ⚙️ MODAL AJUSTES */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            className="modal-bg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="modal-card"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+            >
+              <h2>⚙️ Ajustes</h2>
+              <ul className="settings-list">
+                <li>🔊 Sonido – On</li>
+                <li>📳 Vibración – On</li>
+                <li>💾 Guardado automático – Activo</li>
+              </ul>
 
-        {/* Nuevo botón de borrado */}
-        <button
-          className="danger-btn"
-          onClick={() => {
-            if (
-              window.confirm(
-                "¿Seguro que querés borrar los puntos de hoy?"
-              )
-            ) {
-              setWeeklyPoints((w) => w - dailyPoints);
-              setDailyPoints(0);
-            }
-          }}
-        >
-          🗑️ Borrar puntos de hoy
-        </button>
+              {/* 🗑️ Nuevo botón para borrar puntos del día */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                className="danger-btn"
+                onClick={() => {
+                  if (
+                    window.confirm("¿Seguro que querés borrar los puntos de hoy?")
+                  ) {
+                    setWeeklyPoints((w) => w - dailyPoints);
+                    setDailyPoints(0);
+                  }
+                }}
+              >
+                🗑️ Borrar puntos de hoy
+              </motion.button>
 
-        <button
-          className="close-btn"
-          onClick={() => setShowSettings(false)}
-        >
-          Cerrar
-        </button>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                className="close-btn"
+                onClick={() => setShowSettings(false)}
+              >
+                Cerrar
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 📈 MODAL EVOLUCIÓN */}
       <AnimatePresence>
         {showProgress && (
-          <motion.div className="modal-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="modal-card progress-card" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
+          <motion.div
+            className="modal-bg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="modal-card progress-card"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+            >
               <div className="progress-header">
-                <motion.button whileTap={{ scale: 0.9 }} className="back-btn" onClick={() => setShowProgress(false)}>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  className="back-btn"
+                  onClick={() => setShowProgress(false)}
+                >
                   <ArrowLeft size={20} />
                 </motion.button>
                 <h2>📈 Evolución {viewMode === "week" ? "semanal" : "mensual"}</h2>
@@ -258,6 +291,13 @@ export default function App() {
                     </span>
                   </div>
                 ))}
+              </div>
+
+              {/* Estadísticas */}
+              <div className="stats-box">
+                <p>🏅 Día récord: {max} pts</p>
+                <p>📊 Promedio diario: {avg} pts</p>
+                <p>🔥 Racha activa: {streak} días</p>
               </div>
 
               <p className="progress-hint">Meta: 50 pts/día</p>
