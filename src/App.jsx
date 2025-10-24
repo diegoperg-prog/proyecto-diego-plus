@@ -4,41 +4,52 @@ import { Settings, BarChart3, ArrowLeft } from "lucide-react";
 import "./index.css";
 
 export default function App() {
+  const STORAGE_KEY = "diegoPlusDataV2";
+
   const [dailyPoints, setDailyPoints] = useState(0);
   const [weeklyPoints, setWeeklyPoints] = useState(0);
   const [recentGain, setRecentGain] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
-  const [history, setHistory] = useState(Array(7).fill(0));
+  const [viewMode, setViewMode] = useState("week"); // week | month
+  const [records, setRecords] = useState([]); // { date, points }
 
-  const STORAGE_KEY = "diegoPlusData";
-
-  // ✅ Cargar progreso guardado al iniciar
+  // ✅ Cargar datos guardados
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const data = JSON.parse(saved);
       setDailyPoints(data.dailyPoints || 0);
       setWeeklyPoints(data.weeklyPoints || 0);
-      setHistory(data.history || Array(7).fill(0));
+      setRecords(data.records || []);
     }
   }, []);
 
-  // ✅ Guardar progreso cada vez que cambian puntos o historial
+  // ✅ Guardar automáticamente
   useEffect(() => {
-    const data = { dailyPoints, weeklyPoints, history };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [dailyPoints, weeklyPoints, history]);
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ dailyPoints, weeklyPoints, records })
+    );
+  }, [dailyPoints, weeklyPoints, records]);
 
-  // 📆 Reset automático de día (reinicia el contador diario)
+  // 📆 Registrar automáticamente el cambio de día
   useEffect(() => {
-    const today = new Date().getDay();
-    const lastSave = localStorage.getItem("diegoPlusLastDay");
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastDate = localStorage.getItem("diegoPlusLastDate");
 
-    if (lastSave && Number(lastSave) !== today) {
+    if (lastDate && lastDate !== todayStr) {
+      // Guardar puntos del día anterior
+      if (dailyPoints > 0) {
+        setRecords((prev) => [
+          ...prev.filter((r) => r.date !== lastDate),
+          { date: lastDate, points: dailyPoints },
+        ]);
+      }
       setDailyPoints(0);
     }
-    localStorage.setItem("diegoPlusLastDay", today);
+
+    localStorage.setItem("diegoPlusLastDate", todayStr);
   }, []);
 
   const activities = [
@@ -63,20 +74,34 @@ export default function App() {
   };
 
   const addPoints = (pts) => {
-    const today = new Date().getDay();
     setDailyPoints((p) => p + pts);
     setWeeklyPoints((p) => p + pts);
     setRecentGain(`+${pts}`);
     playSound();
     vibrate();
-
-    // actualizar histórico
-    const newHistory = [...history];
-    newHistory[today] = (newHistory[today] || 0) + pts;
-    setHistory(newHistory);
-
     setTimeout(() => setRecentGain(null), 1000);
   };
+
+  // 🔢 Filtrar registros por rango temporal
+  const getFilteredRecords = () => {
+    const now = new Date();
+    const cutoff = new Date(
+      now.getTime() - (viewMode === "week" ? 6 : 29) * 24 * 60 * 60 * 1000
+    );
+    const filtered = records.filter((r) => new Date(r.date) >= cutoff);
+
+    // Rellenar días vacíos
+    const allDays = [];
+    for (let i = 0; i < (viewMode === "week" ? 7 : 30); i++) {
+      const d = new Date(now.getTime() - (viewMode === "week" ? 6 - i : 29 - i) * 24 * 60 * 60 * 1000);
+      const ds = d.toISOString().slice(0, 10);
+      const found = filtered.find((r) => r.date === ds);
+      allDays.push({ date: ds, points: found ? found.points : 0 });
+    }
+    return allDays;
+  };
+
+  const filtered = getFilteredRecords();
 
   return (
     <div className="app-container">
@@ -143,12 +168,7 @@ export default function App() {
       {/* ⚙️ MODAL AJUSTES */}
       <AnimatePresence>
         {showSettings && (
-          <motion.div
-            className="modal-bg"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
+          <motion.div className="modal-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="modal-card" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
               <h2>⚙️ Ajustes</h2>
               <ul>
@@ -156,9 +176,7 @@ export default function App() {
                 <li>📳 Vibración – On</li>
                 <li>💾 Guardado automático – Activo</li>
               </ul>
-              <button className="close-btn" onClick={() => setShowSettings(false)}>
-                Cerrar
-              </button>
+              <button className="close-btn" onClick={() => setShowSettings(false)}>Cerrar</button>
             </motion.div>
           </motion.div>
         )}
@@ -167,33 +185,43 @@ export default function App() {
       {/* 📈 MODAL EVOLUCIÓN */}
       <AnimatePresence>
         {showProgress && (
-          <motion.div
-            className="modal-bg"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
+          <motion.div className="modal-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="modal-card progress-card" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
               <div className="progress-header">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  className="back-btn"
-                  onClick={() => setShowProgress(false)}
-                >
+                <motion.button whileTap={{ scale: 0.9 }} className="back-btn" onClick={() => setShowProgress(false)}>
                   <ArrowLeft size={20} />
                 </motion.button>
-                <h2>📈 Evolución semanal</h2>
+                <h2>📈 Evolución {viewMode === "week" ? "semanal" : "mensual"}</h2>
               </div>
 
+              {/* Selector semana/mes */}
+              <div className="view-toggle">
+                <button
+                  className={`toggle-btn ${viewMode === "week" ? "active" : ""}`}
+                  onClick={() => setViewMode("week")}
+                >
+                  Semana
+                </button>
+                <button
+                  className={`toggle-btn ${viewMode === "month" ? "active" : ""}`}
+                  onClick={() => setViewMode("month")}
+                >
+                  Mes
+                </button>
+              </div>
+
+              {/* Gráfico */}
               <div className="bars-container">
-                {history.map((value, i) => (
+                {filtered.map((r, i) => (
                   <div key={i} className="bar-group">
                     <div
                       className="bar"
-                      style={{ height: `${Math.min(value * 2, 100)}px` }}
+                      style={{ height: `${Math.min(r.points * 2, 100)}px` }}
                     ></div>
                     <span className="bar-label">
-                      {["D", "L", "M", "X", "J", "V", "S"][i]}
+                      {viewMode === "week"
+                        ? ["D", "L", "M", "X", "J", "V", "S"][i]
+                        : new Date(r.date).getDate()}
                     </span>
                   </div>
                 ))}
