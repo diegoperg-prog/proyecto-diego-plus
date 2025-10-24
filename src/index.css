@@ -1,308 +1,294 @@
-body {
-  margin: 0;
-  background-color: #000;
-  color: #fff;
-  font-family: "Poppins", "Montserrat", sans-serif;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Settings, BarChart3, ArrowLeft } from "lucide-react";
+import "./index.css";
 
-.app-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  height: 100vh;
-  width: 100%;
-  max-width: 400px;
-  padding: 16px;
-  box-sizing: border-box;
-}
+export default function App() {
+  const STORAGE_KEY = "diegoPlusDataV21";
 
-.logo {
-  width: 110px;
-  height: auto;
-  margin-top: 8px;
-  margin-bottom: 4px;
-}
+  const [dailyPoints, setDailyPoints] = useState(0);
+  const [weeklyPoints, setWeeklyPoints] = useState(0);
+  const [recentGain, setRecentGain] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
+  const [viewMode, setViewMode] = useState("week"); // week | month
+  const [records, setRecords] = useState([]);
 
-.points-display {
-  text-align: center;
-  margin-bottom: 12px;
-}
+  // ✅ Cargar datos guardados
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      setDailyPoints(data.dailyPoints || 0);
+      setWeeklyPoints(data.weeklyPoints || 0);
+      setRecords(data.records || []);
+    }
+  }, []);
 
-.points-number {
-  font-size: 64px;
-  font-weight: 800;
-  color: #4caf50;
-  position: relative;
-}
+  // ✅ Guardar automáticamente
+  useEffect(() => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ dailyPoints, weeklyPoints, records })
+    );
+  }, [dailyPoints, weeklyPoints, records]);
 
-.points-gain {
-  position: absolute;
-  top: -40px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #4caf50;
-  font-size: 32px;
-  font-weight: bold;
-}
+  // 📆 Registrar cambio de día
+  useEffect(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastDate = localStorage.getItem("diegoPlusLastDate");
 
-.points-today {
-  color: #ccc;
-  font-size: 16px;
-  margin-top: 4px;
-}
+    if (lastDate && lastDate !== todayStr) {
+      if (dailyPoints > 0) {
+        setRecords((prev) => [
+          ...prev.filter((r) => r.date !== lastDate),
+          { date: lastDate, points: dailyPoints },
+        ]);
+      }
+      setDailyPoints(0);
+    }
 
-.points-week {
-  color: #ffcc00;
-  font-size: 18px;
-  font-weight: 600;
-  margin-top: 2px;
-}
+    localStorage.setItem("diegoPlusLastDate", todayStr);
+  }, []);
 
-.buttons-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  width: 100%;
-  margin-top: 10px;
-  margin-bottom: 24px;
-}
+  const activities = [
+    { label: "Entrené", pts: 10 },
+    { label: "Caminé 30 min", pts: 5 },
+    { label: "Comí saludable", pts: 5 },
+    { label: "Dormí 7h+", pts: 5 },
+    { label: "Sin pantallas", pts: 5 },
+    { label: "Reflexioné", pts: 5 },
+    { label: "Tarea laboral", pts: 10 },
+    { label: "Aprendí algo", pts: 5 },
+  ];
 
-.activity-btn {
-  background-color: #1c1c1c;
-  color: white;
-  padding: 14px;
-  border-radius: 16px;
-  font-size: 15px;
-  text-align: center;
-  width: 100%;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
-}
+  const playSound = () => {
+    const audio = new Audio("/sound/pop.ogg");
+    audio.volume = 0.4;
+    audio.play().catch(() => {});
+  };
 
-.activity-btn small {
-  display: block;
-  color: #4caf50;
-  font-size: 13px;
-  margin-top: 3px;
-}
+  const vibrate = () => {
+    if (navigator.vibrate) navigator.vibrate(80);
+  };
 
-.activity-btn:hover {
-  background-color: #2b2b2b;
-}
+  const addPoints = (pts) => {
+    setDailyPoints((p) => p + pts);
+    setWeeklyPoints((p) => p + pts);
+    setRecentGain(`+${pts}`);
+    playSound();
+    vibrate();
+    setTimeout(() => setRecentGain(null), 1000);
+  };
 
-.bottom-buttons {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 60px;
-  margin-bottom: 20px;
-}
+  // 🔢 Filtrar registros según rango temporal
+  const getFilteredRecords = () => {
+    const now = new Date();
+    const cutoff = new Date(
+      now.getTime() - (viewMode === "week" ? 6 : 29) * 24 * 60 * 60 * 1000
+    );
+    const filtered = records.filter((r) => new Date(r.date) >= cutoff);
 
-.circle-btn {
-  width: 64px;
-  height: 64px;
-  background-color: #1c1c1c;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
-  color: white;
-}
+    // Completar días vacíos
+    const totalDays = viewMode === "week" ? 7 : 30;
+    const allDays = [];
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(
+        now.getTime() - (totalDays - 1 - i) * 24 * 60 * 60 * 1000
+      );
+      const ds = d.toISOString().slice(0, 10);
+      const found = filtered.find((r) => r.date === ds);
+      allDays.push({ date: ds, points: found ? found.points : 0 });
+    }
+    return allDays;
+  };
 
-.circle-btn:hover {
-  background-color: #2b2b2b;
-}
+  const filtered = getFilteredRecords();
 
-.modal-bg {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-}
+  // 📊 Estadísticas
+  const calcStats = () => {
+    const points = filtered.map((r) => r.points);
+    const total = points.reduce((a, b) => a + b, 0);
+    const avg = points.length ? (total / points.length).toFixed(1) : 0;
+    const max = Math.max(...points, 0);
 
-.modal-card {
-  background-color: #1c1c1c;
-  padding: 20px;
-  border-radius: 16px;
-  width: 80%;
-  max-width: 320px;
-  text-align: center;
-}
+    // Racha: días consecutivos con puntos > 0
+    let streak = 0;
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (points[i] > 0) streak++;
+      else break;
+    }
 
-.modal-card h2 {
-  margin-bottom: 12px;
-  font-size: 18px;
-}
+    return { total, avg, max, streak };
+  };
 
-.modal-card ul {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 16px 0;
-}
+  const { avg, max, streak } = calcStats();
 
-.modal-card li {
-  margin-bottom: 8px;
-  color: #ddd;
-}
+  return (
+    <div className="app-container">
+      {/* LOGO */}
+      <img src="/icons/icon-192.png" alt="Diego+ logo" className="logo" />
 
-.close-btn {
-  background-color: #4caf50;
-  color: black;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  width: 100%;
-}
+      {/* PUNTOS */}
+      <div className="points-display">
+        <div className="points-number">
+          {dailyPoints}
+          <AnimatePresence>
+            {recentGain && (
+              <motion.span
+                key={recentGain}
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 0, y: -40 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1 }}
+                className="points-gain"
+              >
+                {recentGain}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+        <div className="points-today">puntos de hoy</div>
+        <div className="points-week">{weeklyPoints} pts en la semana</div>
+      </div>
 
-.close-btn:hover {
-  background-color: #6de36d;
-}
-.progress-card {
-  text-align: center;
-  width: 90%;
-  max-width: 340px;
-}
+      {/* BOTONES DE ACTIVIDADES */}
+      <div className="buttons-grid">
+        {activities.map((a) => (
+          <motion.button
+            key={a.label}
+            onClick={() => addPoints(a.pts)}
+            whileTap={{ scale: 0.95 }}
+            className="activity-btn"
+          >
+            <span>{a.label}</span>
+            <small>+{a.pts}</small>
+          </motion.button>
+        ))}
+      </div>
 
-.progress-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  margin-bottom: 16px;
-}
+      {/* BOTONES INFERIORES */}
+      <div className="bottom-buttons">
+        <motion.button
+          onClick={() => setShowSettings(true)}
+          whileTap={{ scale: 0.9 }}
+          className="circle-btn"
+        >
+          <Settings size={28} />
+        </motion.button>
 
-.back-btn {
-  position: absolute;
-  left: 0;
-  top: 0;
-  background: none;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-}
+        <motion.button
+          onClick={() => setShowProgress(true)}
+          whileTap={{ scale: 0.9 }}
+          className="circle-btn"
+        >
+          <BarChart3 size={28} />
+        </motion.button>
+      </div>
 
-.bars-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  height: 120px;
-  margin: 20px 0 10px;
-  padding: 0 10px;
-}
+      {/* ⚙️ MODAL AJUSTES */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            className="modal-bg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="modal-card"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+            >
+              <h2>⚙️ Ajustes</h2>
+              <ul>
+                <li>🔊 Sonido – On</li>
+                <li>📳 Vibración – On</li>
+                <li>💾 Guardado automático – Activo</li>
+              </ul>
+              <button
+                className="close-btn"
+                onClick={() => setShowSettings(false)}
+              >
+                Cerrar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-.bar-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+      {/* 📈 MODAL EVOLUCIÓN */}
+      <AnimatePresence>
+        {showProgress && (
+          <motion.div
+            className="modal-bg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="modal-card progress-card"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+            >
+              <div className="progress-header">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  className="back-btn"
+                  onClick={() => setShowProgress(false)}
+                >
+                  <ArrowLeft size={20} />
+                </motion.button>
+                <h2>📈 Evolución {viewMode === "week" ? "semanal" : "mensual"}</h2>
+              </div>
 
-.bar {
-  width: 20px;
-  background-color: #4caf50;
-  border-radius: 6px 6px 0 0;
-  transition: height 0.5s ease;
-}
+              {/* Selector semana/mes */}
+              <div className="view-toggle">
+                <button
+                  className={`toggle-btn ${viewMode === "week" ? "active" : ""}`}
+                  onClick={() => setViewMode("week")}
+                >
+                  Semana
+                </button>
+                <button
+                  className={`toggle-btn ${viewMode === "month" ? "active" : ""}`}
+                  onClick={() => setViewMode("month")}
+                >
+                  Mes
+                </button>
+              </div>
 
-.bar-label {
-  margin-top: 6px;
-  font-size: 13px;
-  color: #aaa;
-}
+              {/* Gráfico */}
+              <div className="bars-container">
+                {filtered.map((r, i) => (
+                  <div key={i} className="bar-group">
+                    <div
+                      className="bar"
+                      style={{ height: `${Math.min(r.points * 2, 100)}px` }}
+                    ></div>
+                    <span className="bar-label">
+                      {viewMode === "week"
+                        ? ["D", "L", "M", "X", "J", "V", "S"][i]
+                        : new Date(r.date).getDate()}
+                    </span>
+                  </div>
+                ))}
+              </div>
 
-.progress-hint {
-  color: #ffcc00;
-  font-size: 14px;
-  margin-top: 8px;
-}
+              {/* Estadísticas */}
+              <div className="stats-box">
+                <p>🏅 Día récord: {max} pts</p>
+                <p>📊 Promedio diario: {avg} pts</p>
+                <p>🔥 Racha activa: {streak} días</p>
+              </div>
 
-.progress-card {
-  text-align: center;
-  width: 90%;
-  max-width: 340px;
-}
-
-.progress-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  margin-bottom: 16px;
-}
-
-.back-btn {
-  position: absolute;
-  left: 0;
-  top: 0;
-  background: none;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-}
-
-.bars-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  height: 120px;
-  margin: 20px 0 10px;
-  padding: 0 10px;
-}
-
-.bar-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.bar {
-  width: 20px;
-  background-color: #4caf50;
-  border-radius: 6px 6px 0 0;
-  transition: height 0.5s ease;
-}
-
-.bar-label {
-  margin-top: 6px;
-  font-size: 13px;
-  color: #aaa;
-}
-
-.progress-hint {
-  color: #ffcc00;
-  font-size: 14px;
-  margin-top: 8px;
-}
-
-.view-toggle {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.toggle-btn {
-  background-color: #1c1c1c;
-  border: none;
-  color: #aaa;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.toggle-btn.active {
-  background-color: #4caf50;
-  color: black;
-  font-weight: 600;
+              <p className="progress-hint">Meta: 50 pts/día</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
