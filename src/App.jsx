@@ -26,23 +26,30 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between py-8 px-6">
-      {/* Display superior */}
-      <motion.div
-        className="w-full max-w-xs bg-zinc-900 rounded-3xl py-6 text-center shadow-lg mb-6"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="text-4xl font-bold text-green-400">{dailyPoints}</div>
-        <div className="text-sm text-gray-400 tracking-wide">puntos de hoy</div>
-        <div className="mt-2 text-lg font-semibold text-yellow-400">
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between py-6 px-6 relative">
+      {/* LOGO */}
+      <img
+        src="/icons/icon-192.png"
+        alt="Diego+ logo"
+        className="w-24 h-24 mt-4 mb-4 opacity-90"
+      />
+
+      {/* Display de puntos */}
+      <div className="text-center mb-6">
+        <div className="text-5xl font-extrabold text-green-400 leading-tight">
+          {dailyPoints}
+        </div>
+        <div className="text-gray-300 text-base tracking-wide mb-1">
+          puntos de hoy
+        </div>
+        <div className="text-yellow-400 text-lg font-semibold">
           {weeklyPoints} pts en la semana
         </div>
-      </motion.div>
+      </div>
 
-      {/* Cuadrícula de botones */}
+      {/* Botones principales */}
       <motion.div
-        className="grid grid-cols-2 gap-4 w-full max-w-xs mb-8"
+        className="grid grid-cols-2 gap-4 w-full max-w-xs justify-items-center flex-grow"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -51,7 +58,7 @@ export default function App() {
             key={a.label}
             onClick={() => addPoints(a.pts)}
             whileTap={{ scale: 0.95 }}
-            className="bg-zinc-800 py-4 rounded-2xl text-center shadow-md active:shadow-sm text-base font-medium"
+            className="bg-zinc-900 text-white py-4 rounded-2xl text-center w-full shadow-md text-base font-medium hover:bg-zinc-800 transition-all"
           >
             {a.label}
             <div className="text-green-400 text-sm mt-1">+{a.pts}</div>
@@ -60,21 +67,21 @@ export default function App() {
       </motion.div>
 
       {/* Botones inferiores */}
-      <div className="flex justify-center gap-10 mb-2">
+      <div className="flex justify-center gap-16 mb-4 mt-6">
         <motion.button
           onClick={() => setShowSettings(true)}
           whileTap={{ scale: 0.9 }}
-          className="w-14 h-14 bg-zinc-800 rounded-full flex items-center justify-center shadow-md"
+          className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center shadow-md hover:bg-zinc-800 transition-all"
         >
-          <Settings size={22} />
+          <Settings size={26} />
         </motion.button>
 
         <motion.button
           onClick={() => setShowProgress(true)}
           whileTap={{ scale: 0.9 }}
-          className="w-14 h-14 bg-zinc-800 rounded-full flex items-center justify-center shadow-md"
+          className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center shadow-md hover:bg-zinc-800 transition-all"
         >
-          <BarChart3 size={22} />
+          <BarChart3 size={26} />
         </motion.button>
       </div>
 
