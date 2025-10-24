@@ -4,34 +4,32 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- ✅ Título y descripción -->
-    <title>Proyecto Diego+</title>
-    <meta name="description" content="Gamificá tu progreso diario — físico, mental y laboral." />
+    <!-- 🔹 Título y descripción -->
+    <title>Diego+</title>
+    <meta name="description" content="Proyecto Diego+ — hábitos, progreso y bienestar gamificado." />
 
-    <!-- ✅ Colores del tema -->
-    <meta name="theme-color" content="#000000" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
-    <!-- ✅ Favicon y app icons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-192.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
-
-    <!-- ✅ Splash screen -->
-    <link rel="apple-touch-startup-image" href="/icons/splash.png" />
-
-    <!-- ✅ Manifest PWA -->
+    <!-- 🔹 Favicon y manifest -->
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-512.png" />
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- ✅ Fuentes -->
+    <!-- 🔹 Color de tema para iPhone -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Diego+" />
+
+    <!-- 🔹 Fuente y estilo base -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Montserrat:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
   </head>
 
-  <body>
+  <body style="background-color: #000; color: #fff; font-family: 'Poppins', sans-serif;">
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- 🔹 Script principal de Vite -->
+    <script type="module" src="./src/main.jsx"></script>
   </body>
 </html>
