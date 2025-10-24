@@ -4,7 +4,8 @@ import { Settings, BarChart3 } from "lucide-react";
 import "./index.css";
 
 export default function App() {
-  const [points, setPoints] = useState(0);
+  const [dailyPoints, setDailyPoints] = useState(0);
+  const [weeklyPoints, setWeeklyPoints] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
 
@@ -12,54 +13,70 @@ export default function App() {
     { label: "Entrené", pts: 10 },
     { label: "Caminé 30 min", pts: 5 },
     { label: "Comí saludable", pts: 5 },
-    { label: "Dormí 7 h +", pts: 5 },
-    { label: "10 min sin pantallas", pts: 5 },
-    { label: "Escribí / reflexioné", pts: 5 },
+    { label: "Dormí 7h+", pts: 5 },
+    { label: "Sin pantallas", pts: 5 },
+    { label: "Reflexioné", pts: 5 },
     { label: "Tarea laboral", pts: 10 },
-    { label: "Aprendí algo nuevo", pts: 5 },
+    { label: "Aprendí algo", pts: 5 },
   ];
 
-  const addPoints = (pts) => setPoints(points + pts);
+  const addPoints = (pts) => {
+    setDailyPoints((p) => p + pts);
+    setWeeklyPoints((p) => p + pts);
+  };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center px-6 py-8">
-      <h1 className="text-xl font-bold mb-6">Diego+ — Tu progreso de hoy</h1>
-
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between py-8 px-6">
+      {/* Display superior */}
       <motion.div
-        className="flex flex-col gap-6 w-full max-w-sm"
-        initial={{ opacity: 0, y: 20 }}
+        className="w-full max-w-xs bg-zinc-900 rounded-3xl py-6 text-center shadow-lg mb-6"
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="text-4xl font-bold text-green-400">{dailyPoints}</div>
+        <div className="text-sm text-gray-400 tracking-wide">puntos de hoy</div>
+        <div className="mt-2 text-lg font-semibold text-yellow-400">
+          {weeklyPoints} pts en la semana
+        </div>
+      </motion.div>
+
+      {/* Cuadrícula de botones */}
+      <motion.div
+        className="grid grid-cols-2 gap-4 w-full max-w-xs mb-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
       >
         {activities.map((a) => (
           <motion.button
             key={a.label}
             onClick={() => addPoints(a.pts)}
-            whileTap={{ scale: 0.97 }}
-            className="bg-zinc-900 text-white rounded-2xl py-4 text-center shadow-md active:shadow-sm"
+            whileTap={{ scale: 0.95 }}
+            className="bg-zinc-800 py-4 rounded-2xl text-center shadow-md active:shadow-sm text-base font-medium"
           >
-            {a.label}  (+{a.pts})
+            {a.label}
+            <div className="text-green-400 text-sm mt-1">+{a.pts}</div>
           </motion.button>
         ))}
-
-        <div className="flex justify-between mt-4">
-          <button
-            className="flex-1 bg-zinc-800 py-3 rounded-2xl mr-2 flex items-center justify-center gap-2"
-            onClick={() => setShowSettings(true)}
-          >
-            <Settings size={18} /> Ajustes
-          </button>
-          <button
-            className="flex-1 bg-zinc-800 py-3 rounded-2xl ml-2 flex items-center justify-center gap-2"
-            onClick={() => setShowProgress(true)}
-          >
-            <BarChart3 size={18} /> Evolución
-          </button>
-        </div>
-
-        <div className="text-center mt-6 text-lg font-semibold">
-          Total hoy: <span className="text-green-400">{points}</span> pts
-        </div>
       </motion.div>
+
+      {/* Botones inferiores */}
+      <div className="flex justify-center gap-10 mb-2">
+        <motion.button
+          onClick={() => setShowSettings(true)}
+          whileTap={{ scale: 0.9 }}
+          className="w-14 h-14 bg-zinc-800 rounded-full flex items-center justify-center shadow-md"
+        >
+          <Settings size={22} />
+        </motion.button>
+
+        <motion.button
+          onClick={() => setShowProgress(true)}
+          whileTap={{ scale: 0.9 }}
+          className="w-14 h-14 bg-zinc-800 rounded-full flex items-center justify-center shadow-md"
+        >
+          <BarChart3 size={22} />
+        </motion.button>
+      </div>
 
       {/* MODAL AJUSTES */}
       <AnimatePresence>
@@ -110,7 +127,7 @@ export default function App() {
             >
               <h2 className="font-bold text-lg mb-4">📈 Evolución diaria</h2>
               <p className="text-sm text-gray-300 mb-2">
-                (Simulado) Tu progreso semanal pronto estará disponible.
+                En la próxima versión verás aquí tus barras de progreso semanal.
               </p>
               <button
                 className="mt-4 bg-green-500 text-black rounded-xl px-4 py-2 w-full"
