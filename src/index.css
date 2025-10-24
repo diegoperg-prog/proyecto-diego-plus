@@ -151,3 +151,41 @@ body {
 .modal-button:hover {
   background-color: #45a049;
 }
+.motivation-popup {
+  position: fixed;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(20, 20, 20, 0.95);
+  color: #fff;
+  padding: 18px 22px;
+  border-radius: 16px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.4;
+  max-width: 300px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+}
+
+.motivation-popup p {
+  margin: 0;
+  color: #f5c542;
+  font-weight: 500;
+}
+
+.motivation-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  cursor: pointer;
+}
+
+.motivation-close:hover {
+  color: #fff;
+}
+
