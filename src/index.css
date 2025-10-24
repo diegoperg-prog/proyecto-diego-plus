@@ -307,7 +307,12 @@ export default function App() {
 .stats-box p {
   margin: 3px 0;
 }
-
+                       
+.settings-list li {
+  margin: 5px 0;
+  font-size: 15px;
+}
+                       
 .danger-btn {
   background-color: #d32f2f;
   color: white;
@@ -325,3 +330,4 @@ export default function App() {
 .danger-btn:hover {
   background-color: #f44336;
 }
+
