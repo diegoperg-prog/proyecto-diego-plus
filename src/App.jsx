@@ -21,10 +21,11 @@ export default function App() {
     { label: "Aprendí algo", pts: 5 },
   ];
 
-  const playSound = () => {
-    const audio = new Audio("/sound/pop.mp3");
-    audio.volume = 0.4;
-    audio.play();
+  const audio = new Audio();
+audio.src = "/sound/pop.ogg";
+audio.type = "audio/ogg";
+audio.volume = 0.4;
+audio.play();
   };
 
   const addPoints = (pts) => {
@@ -173,3 +174,4 @@ export default function App() {
     </div>
   );
 }
+
