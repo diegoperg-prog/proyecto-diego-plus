@@ -22,4 +22,3 @@
     "node": "18.x"
   }
 }
-fix: correct package.json JSON syntax and dependencies
