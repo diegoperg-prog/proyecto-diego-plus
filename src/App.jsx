@@ -21,7 +21,6 @@ export default function App() {
     { label: "Aprendí algo", pts: 5 },
   ];
 
-  // 🔊 Reproduce un sonido al sumar puntos
   const playSound = () => {
     const audio = new Audio();
     audio.src = "/sound/pop.ogg";
@@ -30,7 +29,6 @@ export default function App() {
     audio.play().catch(() => {});
   };
 
-  // 📈 Sumar puntos y mostrar animación + sonido
   const addPoints = (pts) => {
     setDailyPoints((p) => p + pts);
     setWeeklyPoints((p) => p + pts);
@@ -41,14 +39,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between py-6 px-6 relative overflow-hidden">
-      {/* LOGO */}
       <img
         src="/icons/icon-192.png"
         alt="Diego+ logo"
         className="w-24 h-24 mt-4 mb-4 opacity-90"
       />
 
-      {/* Display de puntos */}
       <div className="text-center mb-6 relative">
         <div className="text-5xl font-extrabold text-green-400 leading-tight relative">
           {dailyPoints}
@@ -75,7 +71,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Botones principales */}
       <motion.div
         className="grid grid-cols-2 gap-4 w-full max-w-xs justify-items-center flex-grow"
         initial={{ opacity: 0 }}
@@ -94,7 +89,6 @@ export default function App() {
         ))}
       </motion.div>
 
-      {/* Botones inferiores */}
       <div className="flex justify-center gap-16 mb-4 mt-6">
         <motion.button
           onClick={() => setShowSettings(true)}
@@ -113,7 +107,6 @@ export default function App() {
         </motion.button>
       </div>
 
-      {/* MODAL AJUSTES */}
       <AnimatePresence>
         {showSettings && (
           <motion.div
@@ -145,7 +138,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* MODAL EVOLUCIÓN */}
       <AnimatePresence>
         {showProgress && (
           <motion.div
