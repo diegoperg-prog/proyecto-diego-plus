@@ -165,22 +165,55 @@ export default function App() {
         </motion.button>
       </div>
 
-      {/* ⚙️ MODAL AJUSTES */}
-      <AnimatePresence>
-        {showSettings && (
-          <motion.div className="modal-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="modal-card" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
-              <h2>⚙️ Ajustes</h2>
-              <ul>
-                <li>🔊 Sonido – On</li>
-                <li>📳 Vibración – On</li>
-                <li>💾 Guardado automático – Activo</li>
-              </ul>
-              <button className="close-btn" onClick={() => setShowSettings(false)}>Cerrar</button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+{/* ⚙️ MODAL AJUSTES */}
+<AnimatePresence>
+  {showSettings && (
+    <motion.div
+      className="modal-bg"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="modal-card"
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
+        exit={{ scale: 0.9 }}
+      >
+        <h2>⚙️ Ajustes</h2>
+        <ul>
+          <li>🔊 Sonido – On</li>
+          <li>📳 Vibración – On</li>
+          <li>💾 Guardado automático – Activo</li>
+        </ul>
+
+        {/* Nuevo botón de borrado */}
+        <button
+          className="danger-btn"
+          onClick={() => {
+            if (
+              window.confirm(
+                "¿Seguro que querés borrar los puntos de hoy?"
+              )
+            ) {
+              setWeeklyPoints((w) => w - dailyPoints);
+              setDailyPoints(0);
+            }
+          }}
+        >
+          🗑️ Borrar puntos de hoy
+        </button>
+
+        <button
+          className="close-btn"
+          onClick={() => setShowSettings(false)}
+        >
+          Cerrar
+        </button>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
       {/* 📈 MODAL EVOLUCIÓN */}
       <AnimatePresence>
