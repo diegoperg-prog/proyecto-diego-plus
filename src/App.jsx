@@ -1,42 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, BarChart3, CalendarDays } from "lucide-react";
+import { Settings, BarChart3 } from "lucide-react";
 import confetti from "canvas-confetti";
 import "./index.css";
 
 export default function App() {
   const [dailyPoints, setDailyPoints] = useState(0);
   const [weeklyPoints, setWeeklyPoints] = useState(0);
-  const [monthlyPoints, setMonthlyPoints] = useState(0);
   const [recentGain, setRecentGain] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
-  const [showMonthly, setShowMonthly] = useState(false);
-  const [reward, setReward] = useState(localStorage.getItem("reward") || "Premiate con algo especial 🍨");
-  const [motivationalPhrase, setMotivationalPhrase] = useState("");
-  const [showAnimation, setShowAnimation] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [dailyLog, setDailyLog] = useState({});
-  const [weeklyHistory, setWeeklyHistory] = useState([]);
-  const [monthlyHistory, setMonthlyHistory] = useState([]);
-  const [lastReset, setLastReset] = useState(localStorage.getItem("lastReset") || "");
+  const [motivation, setMotivation] = useState("");
+  const [showMotivation, setShowMotivation] = useState(true);
 
-  const days = ["L", "M", "M", "J", "V", "S", "D"];
-
-  // 🎯 Actividades con íconos
   const activities = [
-    { label: "Entrené", pts: 10, icon: "🏋️‍♂️" },
-    { label: "Caminé 30 min", pts: 5, icon: "🚶‍♂️" },
-    { label: "Comí saludable", pts: 5, icon: "🍎" },
-    { label: "Dormí 7h+", pts: 5, icon: "🌙" },
-    { label: "Sin pantallas", pts: 5, icon: "📵" },
-    { label: "Reflexioné", pts: 5, icon: "✍️" },
-    { label: "Tarea laboral", pts: 10, icon: "💼" },
-    { label: "Aprendí algo", pts: 5, icon: "📚" },
+    { label: "Entrené", pts: 10 },
+    { label: "Caminé 30 min", pts: 5 },
+    { label: "Comí saludable", pts: 5 },
+    { label: "Dormí 7h+", pts: 5 },
+    { label: "Sin pantallas", pts: 5 },
+    { label: "Reflexioné", pts: 5 },
+    { label: "Tarea laboral", pts: 10 },
+    { label: "Aprendí algo", pts: 5 },
   ];
 
-  // 💬 Frases (acortadas para simplicidad)
-  const motivationalPhrases = [
+  const phrases = [
     "Cada punto cuenta más de lo que parece.",
     "Tu progreso de hoy será tu estándar mañana.",
     "Avanzar lento sigue siendo avanzar.",
@@ -140,113 +128,58 @@ export default function App() {
     "El cambio real empieza en lo cotidiano."
   ];
 
-  // 🎲 Frase aleatoria
+  // Elegir frase aleatoria sin repetir la última
   useEffect(() => {
-    const phrase =
-      motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)];
-    setMotivationalPhrase(phrase);
+    let prev = localStorage.getItem("lastPhrase");
+    let newPhrase = prev;
+    while (newPhrase === prev) {
+      newPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+    }
+    setMotivation(newPhrase);
+    localStorage.setItem("lastPhrase", newPhrase);
   }, []);
 
-  // 🔄 Cargar datos
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("diegoPlusData")) || {};
-    setDailyPoints(stored.dailyPoints || 0);
-    setWeeklyPoints(stored.weeklyPoints || 0);
-    setMonthlyPoints(stored.monthlyPoints || 0);
-    setDailyLog(stored.dailyLog || {});
-    setWeeklyHistory(stored.weeklyHistory || []);
-    setMonthlyHistory(stored.monthlyHistory || []);
-    setLastReset(stored.lastReset || "");
-  }, []);
-
-  // 💾 Guardar datos
-  useEffect(() => {
-    localStorage.setItem(
-      "diegoPlusData",
-      JSON.stringify({
-        dailyPoints,
-        weeklyPoints,
-        monthlyPoints,
-        dailyLog,
-        weeklyHistory,
-        monthlyHistory,
-        lastReset,
-      })
-    );
-  }, [dailyPoints, weeklyPoints, monthlyPoints, dailyLog, weeklyHistory, monthlyHistory, lastReset]);
-
-  // 🧮 Día actual
-  const currentDayIndex = new Date().getDay(); // 0-6
-  const dayKey = days[currentDayIndex === 0 ? 6 : currentDayIndex - 1];
-
-  // 📈 Agregar puntos
   const addPoints = (pts) => {
-    const newDaily = (dailyLog[dayKey] || 0) + pts;
-    const updatedDaily = { ...dailyLog, [dayKey]: newDaily };
-    setDailyLog(updatedDaily);
     setDailyPoints((p) => p + pts);
     setWeeklyPoints((p) => p + pts);
-    setMonthlyPoints((p) => p + pts);
     setRecentGain(`+${pts}`);
-    playSound(pts);
-
-    // 🎁 Recompensa automática
-    if (weeklyPoints + pts >= 100 && weeklyPoints < 100) {
-      confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
-      navigator.vibrate(150);
-      setTimeout(() => alert(`🎉 ¡Objetivo semanal alcanzado!\n${reward}`), 500);
-    }
-
+    confetti({
+      particleCount: 50,
+      spread: 80,
+      origin: { y: 0.7 },
+    });
     setTimeout(() => setRecentGain(null), 1000);
-  };
-
-  // 🔊 Sonido
-  const playSound = (pts) => {
-    const audio = new Audio(pts >= 10 ? "/sound/success.ogg" : "/sound/pop.ogg");
-    audio.volume = 0.4;
-    audio.play().catch(() => {});
-  };
-
-  // 🕒 Reinicio semanal/mensual
-  useEffect(() => {
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const last = new Date(lastReset);
-    const newWeek = now.getDay() === 1 && now - last > 24 * 3600 * 1000 * 3;
-    const newMonth = now.getDate() === 1 && now.getMonth() !== last.getMonth();
-
-    if (newWeek) handleReset("semana");
-    else if (newMonth) handleReset("mes");
-  }, []);
-
-  const handleReset = (type) => {
-    if (window.confirm(`¿Querés comenzar una nueva ${type}?`)) {
-      if (type === "semana") {
-        setWeeklyHistory((h) => [...h, { weekStart: new Date().toISOString(), total: weeklyPoints }]);
-        setDailyLog({});
-        setWeeklyPoints(0);
-        setDailyPoints(0);
-      } else {
-        setMonthlyHistory((h) => [...h, { month: new Date().toLocaleString("es-UY", { month: "long", year: "numeric" }), total: monthlyPoints }]);
-        setMonthlyPoints(0);
-      }
-      setLastReset(new Date().toISOString());
-      setShowAnimation(true);
-      setTimeout(() => setShowAnimation(false), 2500);
-      const audio = new Audio("/sound/soft-success.ogg");
-      audio.play().catch(() => {});
-      navigator.vibrate(100);
-    }
   };
 
   return (
     <div className="app-container">
-      <img src="/icons/icon-192.png" alt="Diego+ logo" className="logo" />
-      <p className="motivation">{motivationalPhrase}</p>
+      {/* Popup de frase motivacional */}
+      <AnimatePresence>
+        {showMotivation && (
+          <motion.div
+            className="motivation-popup"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.5 }}
+          >
+            <p>{motivation}</p>
+            <button
+              className="motivation-close"
+              onClick={() => setShowMotivation(false)}
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Puntos */}
+      {/* LOGO */}
+      <img src="/icons/icon-192.png" alt="Logo Diego+" className="app-logo" />
+
+      {/* CONTADOR */}
       <div className="points-display">
-        <div className={`points-number ${weeklyPoints >= 100 ? "glow" : ""}`}>
+        <div className="daily-points">
           {dailyPoints}
           <AnimatePresence>
             {recentGain && (
@@ -256,150 +189,110 @@ export default function App() {
                 animate={{ opacity: 0, y: -30 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 1 }}
-                className="points-gain"
+                className="recent-gain"
               >
                 {recentGain}
               </motion.span>
             )}
           </AnimatePresence>
         </div>
-        <div className="points-today">puntos de hoy</div>
-        <div className="points-week">{weeklyPoints} pts en la semana</div>
-
-        <div className="progress-bar">
-          <div
-            className="progress-fill"
-            style={{
-              width: `${Math.min((weeklyPoints / 100) * 100, 100)}%`,
-              backgroundColor: weeklyPoints >= 100 ? "#FFD700" : "#4CAF50",
-            }}
-          ></div>
-        </div>
+        <div className="points-subtitle">puntos de hoy</div>
+        <div className="weekly-points">{weeklyPoints} pts en la semana</div>
       </div>
 
-      {/* Actividades */}
-      <div className="buttons-grid">
+      {/* BOTONES PRINCIPALES */}
+      <motion.div
+        className="activity-grid"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
         {activities.map((a) => (
           <motion.button
             key={a.label}
             onClick={() => addPoints(a.pts)}
             whileTap={{ scale: 0.95 }}
-            className="activity-btn"
+            className="activity-button"
           >
-            <span style={{ fontSize: "1.2rem", marginRight: "6px" }}>{a.icon}</span>
             {a.label}
-            <div className="pts">+{a.pts}</div>
+            <div className="activity-points">+{a.pts}</div>
           </motion.button>
         ))}
-      </div>
+      </motion.div>
 
-      {/* Botones inferiores */}
+      {/* BOTONES INFERIORES */}
       <div className="bottom-buttons">
-        <button className="circle-btn" onClick={() => setShowSettings(true)}>
-          <Settings size={24} />
-        </button>
-        <button className="circle-btn" onClick={() => setShowProgress(true)}>
-          <BarChart3 size={24} />
-        </button>
-        <button className="circle-btn" onClick={() => setShowMonthly(true)}>
-          <CalendarDays size={24} />
-        </button>
+        <motion.button
+          onClick={() => setShowSettings(true)}
+          whileTap={{ scale: 0.9 }}
+          className="round-button"
+        >
+          <Settings size={26} />
+        </motion.button>
+
+        <motion.button
+          onClick={() => setShowProgress(true)}
+          whileTap={{ scale: 0.9 }}
+          className="round-button"
+        >
+          <BarChart3 size={26} />
+        </motion.button>
       </div>
 
-      {/* ⚙️ Ajustes */}
+      {/* MODAL AJUSTES */}
       <AnimatePresence>
         {showSettings && (
-          <motion.div className="modal-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="modal-card" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
-              <h2>⚙️ Ajustes</h2>
-              <input
-                className="reward-input"
-                type="text"
-                placeholder="Editar recompensa..."
-                value={reward}
-                onChange={(e) => {
-                  setReward(e.target.value);
-                  localStorage.setItem("reward", e.target.value);
-                }}
-              />
-              <button className="close-btn" onClick={() => setShowSettings(false)}>Cerrar</button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 📈 Evolución semanal */}
-      <AnimatePresence>
-        {showProgress && (
-          <motion.div className="modal-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="modal-card" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
-              <h2>📈 Evolución semanal</h2>
-              <div className="bars-container">
-                {days.map((d) => (
-                  <div key={d} className="bar-group">
-                    <div
-                      className="bar"
-                      style={{ height: `${Math.min((dailyLog[d] || 0), 100)}px` }}
-                    ></div>
-                    <div className="bar-label">{d}</div>
-                  </div>
-                ))}
-              </div>
-              <button className="close-btn" onClick={() => setShowProgress(false)}>Cerrar</button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 📅 Balance mensual */}
-      <AnimatePresence>
-        {showMonthly && (
-          <motion.div className="modal-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="modal-card" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
-              <h2>📅 Balance mensual</h2>
-              <p>Total del mes: {monthlyPoints} pts</p>
-              <button
-                className="close-btn"
-                onClick={() => setShowHistory((h) => !h)}
-              >
-                {showHistory ? "Ocultar ▲" : "Mostrar más ▼"}
-              </button>
-              <AnimatePresence>
-                {showHistory && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="stats-box"
-                  >
-                    {monthlyHistory.map((m, i) => (
-                      <p key={i}>{m.month}: {m.total} pts</p>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <button className="close-btn" onClick={() => setShowMonthly(false)}>Cerrar</button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ✨ Animación reinicio */}
-      <AnimatePresence>
-        {showAnimation && (
           <motion.div
-            className="reset-overlay"
+            className="modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="reset-message"
-              initial={{ scale: 0.8 }}
+              className="modal-content"
+              initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
-              transition={{ duration: 0.6 }}
+              exit={{ scale: 0.9 }}
             >
-              ✨ Nueva semana, nuevas oportunidades
+              <h2>⚙️ Ajustes</h2>
+              <ul>
+                <li>🔊 Sonido – On</li>
+                <li>📳 Vibración – On</li>
+                <li>🎁 Recompensas configuradas</li>
+              </ul>
+              <button
+                className="modal-button"
+                onClick={() => setShowSettings(false)}
+              >
+                Cerrar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL EVOLUCIÓN */}
+      <AnimatePresence>
+        {showProgress && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="modal-content"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+            >
+              <h2>📈 Evolución diaria</h2>
+              <p>En la próxima versión verás aquí tus barras de progreso semanal.</p>
+              <button
+                className="modal-button"
+                onClick={() => setShowProgress(false)}
+              >
+                Cerrar
+              </button>
             </motion.div>
           </motion.div>
         )}
