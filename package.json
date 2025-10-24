@@ -2,21 +2,19 @@
   "name": "proyecto-diego-plus",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "canvas-confetti": "^1.9.2",
-    "framer-motion": "^10.16.4",
-    "lucide-react": "^0.469.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "framer-motion": "^10.16.5",
+    "lucide-react": "^0.366.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.2",
-    "vite": "^5.4.9"
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.4.0"
   }
 }
