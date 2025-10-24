@@ -21,102 +21,69 @@ export default function App() {
     { label: "Aprendí algo", pts: 5 },
   ];
 
+  // 🔊 Reproduce sonido
   const playSound = () => {
     const audio = new Audio("/sound/pop.ogg");
     audio.volume = 0.4;
     audio.play().catch(() => {});
   };
 
+  // 📳 Vibración (si está disponible)
+  const vibrate = () => {
+    if (navigator.vibrate) {
+      navigator.vibrate(80);
+    }
+  };
+
+  // 📈 Sumar puntos con feedback
   const addPoints = (pts) => {
     setDailyPoints((p) => p + pts);
     setWeeklyPoints((p) => p + pts);
     setRecentGain(`+${pts}`);
     playSound();
+    vibrate();
     setTimeout(() => setRecentGain(null), 1000);
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between py-6 px-6 relative overflow-hidden">
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between py-8 px-6 relative overflow-hidden">
+      {/* LOGO */}
       <img
         src="/icons/icon-192.png"
         alt="Diego+ logo"
-        className="w-24 h-24 mt-4 mb-4 opacity-90"
+        className="w-28 h-28 mt-6 mb-4 opacity-90"
       />
 
-<div className="min-h-screen bg-black text-white flex flex-col items-center justify-between py-8 px-6 relative overflow-hidden">
-  {/* LOGO */}
-  <img
-    src="/icons/icon-192.png"
-    alt="Diego+ logo"
-    className="w-28 h-28 mt-6 mb-2 opacity-90"
-  />
+      {/* PUNTOS */}
+      <div className="text-center mb-8 relative">
+        <div className="text-6xl font-extrabold text-green-400 leading-tight relative">
+          {dailyPoints}
+          <AnimatePresence>
+            {recentGain && (
+              <motion.span
+                key={recentGain}
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 0, y: -40 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1 }}
+                className="absolute left-1/2 -translate-x-1/2 text-green-400 text-4xl font-bold"
+              >
+                {recentGain}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+        <div className="text-gray-300 text-lg tracking-wide mb-1">
+          puntos de hoy
+        </div>
+        <div className="text-yellow-400 text-xl font-semibold">
+          {weeklyPoints} pts en la semana
+        </div>
+      </div>
 
-  {/* Display de puntos */}
-  <div className="text-center mb-8 relative">
-    <div className="text-6xl font-extrabold text-green-400 leading-tight relative">
-      {dailyPoints}
-      <AnimatePresence>
-        {recentGain && (
-          <motion.span
-            key={recentGain}
-            initial={{ opacity: 1, y: 0 }}
-            animate={{ opacity: 0, y: -40 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-            className="absolute left-1/2 -translate-x-1/2 text-green-400 text-4xl font-bold"
-          >
-            {recentGain}
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </div>
-    <div className="text-gray-300 text-lg tracking-wide mb-1">puntos de hoy</div>
-    <div className="text-yellow-400 text-xl font-semibold">
-      {weeklyPoints} pts en la semana
-    </div>
-  </div>
-
-  {/* Botones principales */}
-  <motion.div
-    className="grid grid-cols-2 gap-5 w-full max-w-xs justify-items-center flex-grow"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-  >
-    {activities.map((a) => (
-      <motion.button
-        key={a.label}
-        onClick={() => addPoints(a.pts)}
-        whileTap={{ scale: 0.95 }}
-        className="bg-zinc-900 text-white py-4 rounded-2xl text-center w-full shadow-md text-base font-medium hover:bg-zinc-800 transition-all"
-      >
-        {a.label}
-        <div className="text-green-400 text-sm mt-1">+{a.pts}</div>
-      </motion.button>
-    ))}
-  </motion.div>
-
-  {/* Botones inferiores */}
-  <div className="flex justify-center gap-16 mb-8 mt-10">
-    <motion.button
-      onClick={() => setShowSettings(true)}
-      whileTap={{ scale: 0.9 }}
-      className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center shadow-md hover:bg-zinc-800 transition-all"
-    >
-      <Settings size={26} />
-    </motion.button>
-
-    <motion.button
-      onClick={() => setShowProgress(true)}
-      whileTap={{ scale: 0.9 }}
-      className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center shadow-md hover:bg-zinc-800 transition-all"
-    >
-      <BarChart3 size={26} />
-    </motion.button>
-  </div>
-</div>
-
+      {/* BOTONES PRINCIPALES */}
       <motion.div
-        className="grid grid-cols-2 gap-4 w-full max-w-xs justify-items-center flex-grow"
+        className="grid grid-cols-2 gap-5 w-full max-w-xs justify-items-center flex-grow"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -133,7 +100,8 @@ export default function App() {
         ))}
       </motion.div>
 
-      <div className="flex justify-center gap-16 mb-4 mt-6">
+      {/* BOTONES INFERIORES */}
+      <div className="flex justify-center gap-16 mb-10 mt-10">
         <motion.button
           onClick={() => setShowSettings(true)}
           whileTap={{ scale: 0.9 }}
@@ -151,6 +119,7 @@ export default function App() {
         </motion.button>
       </div>
 
+      {/* MODAL AJUSTES */}
       <AnimatePresence>
         {showSettings && (
           <motion.div
@@ -182,6 +151,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* MODAL EVOLUCIÓN */}
       <AnimatePresence>
         {showProgress && (
           <motion.div
