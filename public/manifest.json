@@ -1,12 +1,11 @@
 {
   "name": "Proyecto Diego+",
   "short_name": "Diego+",
-  "theme_color": "#000000",
-  "background_color": "#000000",
-  "display": "standalone",
-  "orientation": "portrait",
+  "description": "Gamificá tu progreso diario — físico, mental y laboral.",
   "start_url": "/",
-  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "/icons/icon-192.png",
