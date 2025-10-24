@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings, BarChart3, ArrowLeft } from "lucide-react";
 import "./index.css";
@@ -9,7 +9,37 @@ export default function App() {
   const [recentGain, setRecentGain] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
-  const [history, setHistory] = useState(Array(7).fill(0)); // 7 días
+  const [history, setHistory] = useState(Array(7).fill(0));
+
+  const STORAGE_KEY = "diegoPlusData";
+
+  // ✅ Cargar progreso guardado al iniciar
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      setDailyPoints(data.dailyPoints || 0);
+      setWeeklyPoints(data.weeklyPoints || 0);
+      setHistory(data.history || Array(7).fill(0));
+    }
+  }, []);
+
+  // ✅ Guardar progreso cada vez que cambian puntos o historial
+  useEffect(() => {
+    const data = { dailyPoints, weeklyPoints, history };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }, [dailyPoints, weeklyPoints, history]);
+
+  // 📆 Reset automático de día (reinicia el contador diario)
+  useEffect(() => {
+    const today = new Date().getDay();
+    const lastSave = localStorage.getItem("diegoPlusLastDay");
+
+    if (lastSave && Number(lastSave) !== today) {
+      setDailyPoints(0);
+    }
+    localStorage.setItem("diegoPlusLastDay", today);
+  }, []);
 
   const activities = [
     { label: "Entrené", pts: 10 },
@@ -33,20 +63,19 @@ export default function App() {
   };
 
   const addPoints = (pts) => {
+    const today = new Date().getDay();
     setDailyPoints((p) => p + pts);
     setWeeklyPoints((p) => p + pts);
     setRecentGain(`+${pts}`);
     playSound();
     vibrate();
-    setTimeout(() => setRecentGain(null), 1000);
-  };
 
-  // Simula guardar puntos del día al cerrar app (placeholder)
-  const saveDay = () => {
-    const today = new Date().getDay();
+    // actualizar histórico
     const newHistory = [...history];
-    newHistory[today] = dailyPoints;
+    newHistory[today] = (newHistory[today] || 0) + pts;
     setHistory(newHistory);
+
+    setTimeout(() => setRecentGain(null), 1000);
   };
 
   return (
@@ -111,7 +140,7 @@ export default function App() {
         </motion.button>
       </div>
 
-      {/* MODAL AJUSTES */}
+      {/* ⚙️ MODAL AJUSTES */}
       <AnimatePresence>
         {showSettings && (
           <motion.div
@@ -125,7 +154,7 @@ export default function App() {
               <ul>
                 <li>🔊 Sonido – On</li>
                 <li>📳 Vibración – On</li>
-                <li>🎁 Recompensas configuradas</li>
+                <li>💾 Guardado automático – Activo</li>
               </ul>
               <button className="close-btn" onClick={() => setShowSettings(false)}>
                 Cerrar
