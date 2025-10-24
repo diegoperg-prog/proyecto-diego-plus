@@ -2,8 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==== ESTILOS BASE ==== */
 body {
-  background-color: #000;
+  background-color: #000;           /* modo oscuro por defecto */
   color: #fff;
   font-family: "Poppins", sans-serif;
+  -webkit-tap-highlight-color: transparent; /* elimina el parpadeo al tocar */
+  touch-action: manipulation;
+  margin: 0;
+  padding: 0;
+}
+
+/* ==== BOTONES ==== */
+button {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* ==== MODALES ==== */
+.modal-bg {
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+}
+
+/* ==== CABECERA ==== */
+h1 {
+  font-family: "Montserrat", sans-serif;
+  letter-spacing: 0.4px;
 }
