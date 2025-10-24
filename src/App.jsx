@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, BarChart3 } from "lucide-react";
+import { Settings, BarChart3, ArrowLeft } from "lucide-react";
 import "./index.css";
 
 export default function App() {
@@ -9,6 +9,7 @@ export default function App() {
   const [recentGain, setRecentGain] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
+  const [history, setHistory] = useState(Array(7).fill(0)); // 7 días
 
   const activities = [
     { label: "Entrené", pts: 10 },
@@ -38,6 +39,14 @@ export default function App() {
     playSound();
     vibrate();
     setTimeout(() => setRecentGain(null), 1000);
+  };
+
+  // Simula guardar puntos del día al cerrar app (placeholder)
+  const saveDay = () => {
+    const today = new Date().getDay();
+    const newHistory = [...history];
+    newHistory[today] = dailyPoints;
+    setHistory(newHistory);
   };
 
   return (
@@ -111,12 +120,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div
-              className="modal-card"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-            >
+            <motion.div className="modal-card" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
               <h2>⚙️ Ajustes</h2>
               <ul>
                 <li>🔊 Sonido – On</li>
@@ -131,7 +135,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* MODAL EVOLUCIÓN */}
+      {/* 📈 MODAL EVOLUCIÓN */}
       <AnimatePresence>
         {showProgress && (
           <motion.div
@@ -140,17 +144,33 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div
-              className="modal-card"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-            >
-              <h2>📈 Evolución diaria</h2>
-              <p>Próximamente: gráfico de progreso semanal.</p>
-              <button className="close-btn" onClick={() => setShowProgress(false)}>
-                Cerrar
-              </button>
+            <motion.div className="modal-card progress-card" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
+              <div className="progress-header">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  className="back-btn"
+                  onClick={() => setShowProgress(false)}
+                >
+                  <ArrowLeft size={20} />
+                </motion.button>
+                <h2>📈 Evolución semanal</h2>
+              </div>
+
+              <div className="bars-container">
+                {history.map((value, i) => (
+                  <div key={i} className="bar-group">
+                    <div
+                      className="bar"
+                      style={{ height: `${Math.min(value * 2, 100)}px` }}
+                    ></div>
+                    <span className="bar-label">
+                      {["D", "L", "M", "X", "J", "V", "S"][i]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="progress-hint">Meta: 50 pts/día</p>
             </motion.div>
           </motion.div>
         )}
