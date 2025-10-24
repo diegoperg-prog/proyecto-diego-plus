@@ -21,21 +21,16 @@ export default function App() {
     { label: "Aprendí algo", pts: 5 },
   ];
 
-  // 🔊 Reproduce sonido
   const playSound = () => {
     const audio = new Audio("/sound/pop.ogg");
     audio.volume = 0.4;
     audio.play().catch(() => {});
   };
 
-  // 📳 Vibración (si está disponible)
   const vibrate = () => {
-    if (navigator.vibrate) {
-      navigator.vibrate(80);
-    }
+    if (navigator.vibrate) navigator.vibrate(80);
   };
 
-  // 📈 Sumar puntos con feedback
   const addPoints = (pts) => {
     setDailyPoints((p) => p + pts);
     setWeeklyPoints((p) => p + pts);
@@ -46,17 +41,13 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between py-8 px-6 relative overflow-hidden">
+    <div className="app-container">
       {/* LOGO */}
-      <img
-        src="/icons/icon-192.png"
-        alt="Diego+ logo"
-        className="w-28 h-28 mt-6 mb-4 opacity-90"
-      />
+      <img src="/icons/icon-192.png" alt="Diego+ logo" className="logo" />
 
       {/* PUNTOS */}
-      <div className="text-center mb-8 relative">
-        <div className="text-6xl font-extrabold text-green-400 leading-tight relative">
+      <div className="points-display">
+        <div className="points-number">
           {dailyPoints}
           <AnimatePresence>
             {recentGain && (
@@ -66,56 +57,48 @@ export default function App() {
                 animate={{ opacity: 0, y: -40 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 1 }}
-                className="absolute left-1/2 -translate-x-1/2 text-green-400 text-4xl font-bold"
+                className="points-gain"
               >
                 {recentGain}
               </motion.span>
             )}
           </AnimatePresence>
         </div>
-        <div className="text-gray-300 text-lg tracking-wide mb-1">
-          puntos de hoy
-        </div>
-        <div className="text-yellow-400 text-xl font-semibold">
-          {weeklyPoints} pts en la semana
-        </div>
+        <div className="points-today">puntos de hoy</div>
+        <div className="points-week">{weeklyPoints} pts en la semana</div>
       </div>
 
-      {/* BOTONES PRINCIPALES */}
-      <motion.div
-        className="grid grid-cols-2 gap-5 w-full max-w-xs justify-items-center flex-grow"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
+      {/* BOTONES DE ACTIVIDADES */}
+      <div className="buttons-grid">
         {activities.map((a) => (
           <motion.button
             key={a.label}
             onClick={() => addPoints(a.pts)}
             whileTap={{ scale: 0.95 }}
-            className="bg-zinc-900 text-white py-4 rounded-2xl text-center w-full shadow-md text-base font-medium hover:bg-zinc-800 transition-all"
+            className="activity-btn"
           >
-            {a.label}
-            <div className="text-green-400 text-sm mt-1">+{a.pts}</div>
+            <span>{a.label}</span>
+            <small>+{a.pts}</small>
           </motion.button>
         ))}
-      </motion.div>
+      </div>
 
       {/* BOTONES INFERIORES */}
-      <div className="flex justify-center gap-16 mb-10 mt-10">
+      <div className="bottom-buttons">
         <motion.button
           onClick={() => setShowSettings(true)}
           whileTap={{ scale: 0.9 }}
-          className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center shadow-md hover:bg-zinc-800 transition-all"
+          className="circle-btn"
         >
-          <Settings size={26} />
+          <Settings size={28} />
         </motion.button>
 
         <motion.button
           onClick={() => setShowProgress(true)}
           whileTap={{ scale: 0.9 }}
-          className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center shadow-md hover:bg-zinc-800 transition-all"
+          className="circle-btn"
         >
-          <BarChart3 size={26} />
+          <BarChart3 size={28} />
         </motion.button>
       </div>
 
@@ -123,27 +106,24 @@ export default function App() {
       <AnimatePresence>
         {showSettings && (
           <motion.div
-            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+            className="modal-bg"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-zinc-900 rounded-2xl p-6 w-80 text-sm"
+              className="modal-card"
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
             >
-              <h2 className="font-bold text-lg mb-4">⚙️ Ajustes</h2>
-              <ul className="space-y-2">
+              <h2>⚙️ Ajustes</h2>
+              <ul>
                 <li>🔊 Sonido – On</li>
                 <li>📳 Vibración – On</li>
                 <li>🎁 Recompensas configuradas</li>
               </ul>
-              <button
-                className="mt-6 bg-green-500 text-black rounded-xl px-4 py-2 w-full"
-                onClick={() => setShowSettings(false)}
-              >
+              <button className="close-btn" onClick={() => setShowSettings(false)}>
                 Cerrar
               </button>
             </motion.div>
@@ -155,25 +135,20 @@ export default function App() {
       <AnimatePresence>
         {showProgress && (
           <motion.div
-            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+            className="modal-bg"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-zinc-900 rounded-2xl p-6 w-80"
+              className="modal-card"
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
             >
-              <h2 className="font-bold text-lg mb-4">📈 Evolución diaria</h2>
-              <p className="text-sm text-gray-300 mb-2">
-                En la próxima versión verás aquí tus barras de progreso semanal.
-              </p>
-              <button
-                className="mt-4 bg-green-500 text-black rounded-xl px-4 py-2 w-full"
-                onClick={() => setShowProgress(false)}
-              >
+              <h2>📈 Evolución diaria</h2>
+              <p>Próximamente: gráfico de progreso semanal.</p>
+              <button className="close-btn" onClick={() => setShowProgress(false)}>
                 Cerrar
               </button>
             </motion.div>
