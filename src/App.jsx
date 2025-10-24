@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, BarChart3, ArrowLeft } from "lucide-react";
+import { Settings, BarChart3, ArrowLeft, Plus } from "lucide-react";
 import "./index.css";
 
 export default function App() {
-  const STORAGE_KEY = "diegoPlusDataV22";
+  const STORAGE_KEY = "diegoPlusDataV23";
 
   const [dailyPoints, setDailyPoints] = useState(0);
   const [weeklyPoints, setWeeklyPoints] = useState(0);
@@ -13,8 +13,22 @@ export default function App() {
   const [showProgress, setShowProgress] = useState(false);
   const [viewMode, setViewMode] = useState("week");
   const [records, setRecords] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [showSplash, setShowSplash] = useState(true);
+  const [newActivity, setNewActivity] = useState("");
 
-  // ✅ Cargar progreso guardado
+  const motivationalPhrases = [
+    "Hoy también suma 💪",
+    "Pequeños pasos → grandes resultados 🌱",
+    "Lo importante es avanzar 🚀",
+    "Constancia mata talento 💯",
+    "Estás construyendo disciplina 🔥",
+    "Sumar puntos es sumar bienestar 💚",
+  ];
+
+  const phrase = motivationalPhrases[new Date().getDay() % motivationalPhrases.length];
+
+  // ✅ Cargar progreso
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -22,18 +36,43 @@ export default function App() {
       setDailyPoints(data.dailyPoints || 0);
       setWeeklyPoints(data.weeklyPoints || 0);
       setRecords(data.records || []);
+      setActivities(
+        data.activities || [
+          { label: "Entrené", pts: 10 },
+          { label: "Caminé 30 min", pts: 5 },
+          { label: "Comí saludable", pts: 5 },
+          { label: "Dormí 7h+", pts: 5 },
+          { label: "Sin pantallas", pts: 5 },
+          { label: "Reflexioné", pts: 5 },
+          { label: "Tarea laboral", pts: 10 },
+          { label: "Aprendí algo", pts: 5 },
+        ]
+      );
+    } else {
+      setActivities([
+        { label: "Entrené", pts: 10 },
+        { label: "Caminé 30 min", pts: 5 },
+        { label: "Comí saludable", pts: 5 },
+        { label: "Dormí 7h+", pts: 5 },
+        { label: "Sin pantallas", pts: 5 },
+        { label: "Reflexioné", pts: 5 },
+        { label: "Tarea laboral", pts: 10 },
+        { label: "Aprendí algo", pts: 5 },
+      ]);
     }
+
+    setTimeout(() => setShowSplash(false), 1200);
   }, []);
 
-  // ✅ Guardar automáticamente
+  // ✅ Guardar datos
   useEffect(() => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ dailyPoints, weeklyPoints, records })
+      JSON.stringify({ dailyPoints, weeklyPoints, records, activities })
     );
-  }, [dailyPoints, weeklyPoints, records]);
+  }, [dailyPoints, weeklyPoints, records, activities]);
 
-  // 📆 Registrar cambio de día
+  // ✅ Cambio de día
   useEffect(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
     const lastDate = localStorage.getItem("diegoPlusLastDate");
@@ -51,17 +90,6 @@ export default function App() {
     localStorage.setItem("diegoPlusLastDate", todayStr);
   }, []);
 
-  const activities = [
-    { label: "Entrené", pts: 10 },
-    { label: "Caminé 30 min", pts: 5 },
-    { label: "Comí saludable", pts: 5 },
-    { label: "Dormí 7h+", pts: 5 },
-    { label: "Sin pantallas", pts: 5 },
-    { label: "Reflexioné", pts: 5 },
-    { label: "Tarea laboral", pts: 10 },
-    { label: "Aprendí algo", pts: 5 },
-  ];
-
   const playSound = () => {
     const audio = new Audio("/sound/pop.ogg");
     audio.volume = 0.4;
@@ -78,23 +106,34 @@ export default function App() {
     setRecentGain(`+${pts}`);
     playSound();
     vibrate();
-    setTimeout(() => setRecentGain(null), 1000);
+    setTimeout(() => setRecentGain(null), 800);
   };
 
-  // 🔢 Filtrar registros según vista semanal o mensual
+  const getProgressColor = () => {
+    if (weeklyPoints < 100) return "#4CAF50";
+    if (weeklyPoints < 200) return "#FFD700";
+    return "#FF5722";
+  };
+
+  const addActivity = () => {
+    if (!newActivity.trim()) return;
+    setActivities([...activities, { label: newActivity.trim(), pts: 5 }]);
+    setNewActivity("");
+  };
+
+  const progressPercent = Math.min((weeklyPoints / 100) * 100, 100);
+
+  // 📊 Filtrado semanal/mensual
   const getFilteredRecords = () => {
     const now = new Date();
     const cutoff = new Date(
       now.getTime() - (viewMode === "week" ? 6 : 29) * 24 * 60 * 60 * 1000
     );
     const filtered = records.filter((r) => new Date(r.date) >= cutoff);
-
     const totalDays = viewMode === "week" ? 7 : 30;
     const allDays = [];
     for (let i = 0; i < totalDays; i++) {
-      const d = new Date(
-        now.getTime() - (totalDays - 1 - i) * 24 * 60 * 60 * 1000
-      );
+      const d = new Date(now.getTime() - (totalDays - 1 - i) * 86400000);
       const ds = d.toISOString().slice(0, 10);
       const found = filtered.find((r) => r.date === ds);
       allDays.push({ date: ds, points: found ? found.points : 0 });
@@ -104,19 +143,16 @@ export default function App() {
 
   const filtered = getFilteredRecords();
 
-  // 📊 Estadísticas (promedio, récord, racha)
   const calcStats = () => {
     const points = filtered.map((r) => r.points);
     const total = points.reduce((a, b) => a + b, 0);
     const avg = points.length ? (total / points.length).toFixed(1) : 0;
     const max = Math.max(...points, 0);
-
     let streak = 0;
     for (let i = points.length - 1; i >= 0; i--) {
       if (points[i] > 0) streak++;
       else break;
     }
-
     return { avg, max, streak };
   };
 
@@ -124,12 +160,33 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* LOGO */}
-      <img src="/icons/icon-192.png" alt="Diego+ logo" className="logo" />
+      {/* Splash animado */}
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            className="splash"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+          >
+            <img src="/icons/icon-192.png" alt="logo" className="splash-logo" />
+            <h1 className="splash-title">Diego+</h1>
+            <p className="splash-sub">Gamificá tu progreso diario ⚡</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* PUNTOS */}
+      {/* Logo + frase */}
+      <img src="/icons/icon-192.png" alt="Diego+ logo" className="logo" />
+      <p className="motivation">{phrase}</p>
+
+      {/* Puntos */}
       <div className="points-display">
-        <div className="points-number">
+        <div
+          className="points-number glow"
+          style={{ color: getProgressColor() }}
+        >
           {dailyPoints}
           <AnimatePresence>
             {recentGain && (
@@ -148,9 +205,17 @@ export default function App() {
         </div>
         <div className="points-today">puntos de hoy</div>
         <div className="points-week">{weeklyPoints} pts en la semana</div>
+
+        {/* Barra de progreso semanal */}
+        <div className="progress-bar">
+          <div
+            className="progress-fill"
+            style={{ width: `${progressPercent}%`, background: getProgressColor() }}
+          ></div>
+        </div>
       </div>
 
-      {/* BOTONES DE ACTIVIDADES */}
+      {/* Actividades */}
       <div className="buttons-grid">
         {activities.map((a) => (
           <motion.button
@@ -159,13 +224,13 @@ export default function App() {
             whileTap={{ scale: 0.95 }}
             className="activity-btn"
           >
-            <span>{a.label}</span>
-            <small>+{a.pts}</small>
+            {a.label}
+            <div className="pts">+{a.pts}</div>
           </motion.button>
         ))}
       </div>
 
-      {/* BOTONES INFERIORES */}
+      {/* Botones inferiores */}
       <div className="bottom-buttons">
         <motion.button
           onClick={() => setShowSettings(true)}
@@ -184,7 +249,7 @@ export default function App() {
         </motion.button>
       </div>
 
-      {/* ⚙️ MODAL AJUSTES */}
+      {/* Modal ajustes */}
       <AnimatePresence>
         {showSettings && (
           <motion.div
@@ -193,12 +258,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div
-              className="modal-card"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-            >
+            <motion.div className="modal-card" initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
               <h2>⚙️ Ajustes</h2>
               <ul className="settings-list">
                 <li>🔊 Sonido – On</li>
@@ -206,14 +266,24 @@ export default function App() {
                 <li>💾 Guardado automático – Activo</li>
               </ul>
 
-              {/* 🗑️ Nuevo botón para borrar puntos del día */}
+              {/* Nueva actividad */}
+              <div className="new-activity">
+                <input
+                  type="text"
+                  placeholder="Nueva actividad"
+                  value={newActivity}
+                  onChange={(e) => setNewActivity(e.target.value)}
+                />
+                <button onClick={addActivity} className="add-btn">
+                  <Plus size={18} />
+                </button>
+              </div>
+
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 className="danger-btn"
                 onClick={() => {
-                  if (
-                    window.confirm("¿Seguro que querés borrar los puntos de hoy?")
-                  ) {
+                  if (window.confirm("¿Borrar puntos de hoy?")) {
                     setWeeklyPoints((w) => w - dailyPoints);
                     setDailyPoints(0);
                   }
@@ -229,78 +299,6 @@ export default function App() {
               >
                 Cerrar
               </motion.button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 📈 MODAL EVOLUCIÓN */}
-      <AnimatePresence>
-        {showProgress && (
-          <motion.div
-            className="modal-bg"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="modal-card progress-card"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-            >
-              <div className="progress-header">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  className="back-btn"
-                  onClick={() => setShowProgress(false)}
-                >
-                  <ArrowLeft size={20} />
-                </motion.button>
-                <h2>📈 Evolución {viewMode === "week" ? "semanal" : "mensual"}</h2>
-              </div>
-
-              {/* Selector semana/mes */}
-              <div className="view-toggle">
-                <button
-                  className={`toggle-btn ${viewMode === "week" ? "active" : ""}`}
-                  onClick={() => setViewMode("week")}
-                >
-                  Semana
-                </button>
-                <button
-                  className={`toggle-btn ${viewMode === "month" ? "active" : ""}`}
-                  onClick={() => setViewMode("month")}
-                >
-                  Mes
-                </button>
-              </div>
-
-              {/* Gráfico */}
-              <div className="bars-container">
-                {filtered.map((r, i) => (
-                  <div key={i} className="bar-group">
-                    <div
-                      className="bar"
-                      style={{ height: `${Math.min(r.points * 2, 100)}px` }}
-                    ></div>
-                    <span className="bar-label">
-                      {viewMode === "week"
-                        ? ["D", "L", "M", "X", "J", "V", "S"][i]
-                        : new Date(r.date).getDate()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Estadísticas */}
-              <div className="stats-box">
-                <p>🏅 Día récord: {max} pts</p>
-                <p>📊 Promedio diario: {avg} pts</p>
-                <p>🔥 Racha activa: {streak} días</p>
-              </div>
-
-              <p className="progress-hint">Meta: 50 pts/día</p>
             </motion.div>
           </motion.div>
         )}
