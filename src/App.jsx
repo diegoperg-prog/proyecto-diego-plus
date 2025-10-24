@@ -6,6 +6,7 @@ import "./index.css";
 export default function App() {
   const [dailyPoints, setDailyPoints] = useState(0);
   const [weeklyPoints, setWeeklyPoints] = useState(0);
+  const [recentGain, setRecentGain] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
 
@@ -20,13 +21,22 @@ export default function App() {
     { label: "Aprendí algo", pts: 5 },
   ];
 
+  const playSound = () => {
+    const audio = new Audio("/sound/pop.mp3");
+    audio.volume = 0.4;
+    audio.play();
+  };
+
   const addPoints = (pts) => {
     setDailyPoints((p) => p + pts);
     setWeeklyPoints((p) => p + pts);
+    setRecentGain(`+${pts}`);
+    playSound();
+    setTimeout(() => setRecentGain(null), 1000);
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between py-6 px-6 relative">
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between py-6 px-6 relative overflow-hidden">
       {/* LOGO */}
       <img
         src="/icons/icon-192.png"
@@ -35,9 +45,23 @@ export default function App() {
       />
 
       {/* Display de puntos */}
-      <div className="text-center mb-6">
-        <div className="text-5xl font-extrabold text-green-400 leading-tight">
+      <div className="text-center mb-6 relative">
+        <div className="text-5xl font-extrabold text-green-400 leading-tight relative">
           {dailyPoints}
+          <AnimatePresence>
+            {recentGain && (
+              <motion.span
+                key={recentGain}
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 0, y: -30 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1 }}
+                className="absolute left-1/2 -translate-x-1/2 text-green-400 text-3xl font-bold"
+              >
+                {recentGain}
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
         <div className="text-gray-300 text-base tracking-wide mb-1">
           puntos de hoy
