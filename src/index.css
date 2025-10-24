@@ -167,3 +167,60 @@ body {
 .close-btn:hover {
   background-color: #6de36d;
 }
+.progress-card {
+  text-align: center;
+  width: 90%;
+  max-width: 340px;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.back-btn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.bars-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 120px;
+  margin: 20px 0 10px;
+  padding: 0 10px;
+}
+
+.bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bar {
+  width: 20px;
+  background-color: #4caf50;
+  border-radius: 6px 6px 0 0;
+  transition: height 0.5s ease;
+}
+
+.bar-label {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+.progress-hint {
+  color: #ffcc00;
+  font-size: 14px;
+  margin-top: 8px;
+}
