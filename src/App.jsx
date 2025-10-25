@@ -1,55 +1,149 @@
-import React, { useEffect, useMemo, useState } from "react";
+// src/App.jsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings, BarChart3, CalendarDays } from "lucide-react";
-import confetti from "canvas-confetti";
+import HeroAvatar from "./components/HeroAvatar";
 import "./index.css";
 
-/**
- * Diego+ v4 — Histórico real + insights + recompensas
- * Persistencia localStorage (clave: diegoPlusDataV4)
- */
+const LS_MAIN = "diegoPlusDataV4";
+const LS_JOURNEY = "diegoPlusJourneyV1";
+const LS_STAGE_MARK = "diegoPlusStageStartPointsV1";
 
-const LS_KEY = "diegoPlusDataV4";
+const COLORS = {
+  1: "#4CAF50",   // llamado
+  2: "#00BCD4",   // pasos
+  3: "#FFEB3B",   // pruebas
+  4: "#F44336",   // abismo
+  5: "#9C27B0",   // salto de fe
+  6: "#FFD700",   // gloria
+};
 
-const DAYS_LABELS = ["L", "M", "M", "J", "V", "S", "D"]; // mapea el getDay() de JS
+const STAGE_INFO = [
+  { id: 1, name: "El llamado a la aventura", pct: 0.8 },
+  { id: 2, name: "Primeros pasos", pct: 0.9 },
+  { id: 3, name: "El camino de las pruebas", pct: 1.0 },
+  { id: 4, name: "Frente al abismo", pct: 1.1 },
+  { id: 5, name: "Salto de fe", pct: 1.2 },
+  { id: 6, name: "La gloria eterna", pct: 1.0 },
+];
 
-function todayKey() {
-  const jsIdx = new Date().getDay(); // 0=Dom..6=Sab
-  return DAYS_LABELS[jsIdx === 0 ? 6 : jsIdx - 1]; // L..D
+// meta base por día (ajustable)
+const GOAL_PER_DAY = 15; // puntos objetivo por día “saludable”
+
+function daysInMonth(date) {
+  const y = date.getFullYear();
+  const m = date.getMonth();
+  return new Date(y, m + 1, 0).getDate();
 }
 
-function todayISO() {
-  return new Date().toISOString().split("T")[0];
+function buildJourneyForMonth(date) {
+  const totalDays = daysInMonth(date);
+  // Partimos el mes en 6 bloques lo más parejos posible
+  // Ej: 31 -> [5,5,5,5,5,6] — 30 -> [5,5,5,5,5,5] — 28 -> [5,5,5,5,4,4]
+  const base = Math.floor(totalDays / 6);
+  let remainder = totalDays % 6; // los primeros "remainder" niveles suman +1 día
+  const segments = Array.from({ length: 6 }, (_, i) => base + (i >= 6 - remainder ? 1 : 0));
+
+  let cursor = 1;
+  const stages = segments.map((len, idx) => {
+    const start = cursor;
+    const end = cursor + len - 1;
+    cursor += len;
+    const cfg = STAGE_INFO[idx];
+    const target = Math.round(len * GOAL_PER_DAY * cfg.pct);
+    return {
+      level: cfg.id,
+      name: cfg.name,
+      startDay: start,
+      endDay: end,
+      color: COLORS[cfg.id],
+      target,         // meta de puntos para ESA etapa
+      length: len,
+      pct: cfg.pct,
+    };
+  });
+  return { monthKey: `${date.getFullYear()}-${date.getMonth() + 1}`, stages };
 }
+
+function todayISO() { return new Date().toISOString().split("T")[0]; }
 
 export default function App() {
-  // --------- estado principal ----------
+  // --- estado de puntos (ya venías con esto)
   const [dailyPoints, setDailyPoints] = useState(0);
   const [weeklyPoints, setWeeklyPoints] = useState(0);
   const [monthlyPoints, setMonthlyPoints] = useState(0);
-
-  const [dailyLog, setDailyLog] = useState({}); // { L: 30, M: 10, ... } semana actual
-  const [weeklyHistory, setWeeklyHistory] = useState([]); // [{weekStart, total}]
-  const [monthlyHistory, setMonthlyHistory] = useState([]); // [{month, total}]
-  const [streakCurrent, setStreakCurrent] = useState(0);
-  const [streakBest, setStreakBest] = useState(0);
-  const [lastActiveDate, setLastActiveDate] = useState(null);
-
-  const [reward, setReward] = useState(
-    localStorage.getItem("reward") || "Premiate con algo especial 🍨"
-  );
+  const [dailyLog, setDailyLog] = useState({}); // mapa L..D si lo usás, no crítico acá
+  const [reward, setReward] = useState(localStorage.getItem("reward") || "Premiate al lograr 100 semanales 🎉");
 
   // UI
-  const [recentGain, setRecentGain] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [showMonthly, setShowMonthly] = useState(false);
-  const [showResetAnim, setShowResetAnim] = useState(false);
-  const [showHistoryMore, setShowHistoryMore] = useState(false);
+  const [recentGain, setRecentGain] = useState(null);
 
-  const [lastReset, setLastReset] = useState(""); // ISO
+  // --- Viaje del Héroe
+  const [journey, setJourney] = useState(null);
+  const stageStartPointsRef = useRef(0); // puntos acumulados al iniciar la etapa actual (para medir progreso relativo)
 
-  // --------- actividades ----------
+  // ---------- cargar/persistir puntos ----------
+  useEffect(() => {
+    const raw = localStorage.getItem(LS_MAIN);
+    if (raw) {
+      try {
+        const d = JSON.parse(raw);
+        setDailyPoints(d.dailyPoints ?? 0);
+        setWeeklyPoints(d.weeklyPoints ?? 0);
+        setMonthlyPoints(d.monthlyPoints ?? 0);
+        setDailyLog(d.dailyLog ?? {});
+      } catch {}
+    }
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(LS_MAIN, JSON.stringify({ dailyPoints, weeklyPoints, monthlyPoints, dailyLog }));
+  }, [dailyPoints, weeklyPoints, monthlyPoints, dailyLog]);
+
+  // ---------- construir viaje del héroe (una vez por mes) ----------
+  useEffect(() => {
+    const now = new Date();
+    const key = `${now.getFullYear()}-${now.getMonth() + 1}`;
+    const cached = localStorage.getItem(LS_JOURNEY);
+    if (cached) {
+      const obj = JSON.parse(cached);
+      if (obj.monthKey === key) { setJourney(obj); return; }
+    }
+    const j = buildJourneyForMonth(now);
+    localStorage.setItem(LS_JOURNEY, JSON.stringify(j));
+    setJourney(j);
+  }, []);
+
+  // ---------- detectar etapa actual y actualizar “puntos al inicio de etapa” ----------
+  const currentStage = useMemo(() => {
+    if (!journey) return null;
+    const today = new Date().getDate();
+    return journey.stages.find(s => today >= s.startDay && today <= s.endDay) || journey.stages[journey.stages.length - 1];
+  }, [journey]);
+
+  // cuando cambio de etapa, “marco” los puntos que llevaba en ese momento
+  useEffect(() => {
+    if (!currentStage) return;
+    const stageKey = `${journey.monthKey}-L${currentStage.level}`;
+    const savedMark = localStorage.getItem(LS_STAGE_MARK);
+    const parsed = savedMark ? JSON.parse(savedMark) : {};
+    if (parsed.stageKey !== stageKey) {
+      // nueva etapa -> grabo baseline de puntos
+      const next = { stageKey, baseline: monthlyPoints };
+      localStorage.setItem(LS_STAGE_MARK, JSON.stringify(next));
+      stageStartPointsRef.current = monthlyPoints;
+    } else {
+      stageStartPointsRef.current = parsed.baseline ?? 0;
+    }
+  }, [currentStage, journey, monthlyPoints]);
+
+  const stageProgressPoints = Math.max(0, monthlyPoints - stageStartPointsRef.current);
+  const stageTarget = currentStage?.target ?? 1;
+  const stagePct = Math.min(100, Math.round((stageProgressPoints / stageTarget) * 100));
+
+  // ---------- sumar puntos (sin sonido) ----------
   const activities = [
     { label: "🏋️‍♂️ Entrené", pts: 10 },
     { label: "🚶‍♂️ Caminé 30 min", pts: 5 },
@@ -61,206 +155,42 @@ export default function App() {
     { label: "📚 Aprendí algo", pts: 5 },
   ];
 
-  // ---------- cargar estado ----------
-  useEffect(() => {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) {
-      try {
-        const d = JSON.parse(raw);
-        setDailyPoints(d.dailyPoints ?? 0);
-        setWeeklyPoints(d.weeklyPoints ?? 0);
-        setMonthlyPoints(d.monthlyPoints ?? 0);
-        setDailyLog(d.dailyLog ?? {});
-        setWeeklyHistory(d.weeklyHistory ?? []);
-        setMonthlyHistory(d.monthlyHistory ?? []);
-        setStreakCurrent(d.streakCurrent ?? 0);
-        setStreakBest(d.streakBest ?? 0);
-        setLastActiveDate(d.lastActiveDate ?? null);
-        setLastReset(d.lastReset ?? "");
-      } catch {
-        // si algo está corrupto, arrancamos limpio
-      }
-    }
-  }, []);
-
-  // ---------- persistir ----------
-  useEffect(() => {
-    localStorage.setItem(
-      LS_KEY,
-      JSON.stringify({
-        dailyPoints,
-        weeklyPoints,
-        monthlyPoints,
-        dailyLog,
-        weeklyHistory,
-        monthlyHistory,
-        streakCurrent,
-        streakBest,
-        lastActiveDate,
-        lastReset,
-      })
-    );
-  }, [
-    dailyPoints,
-    weeklyPoints,
-    monthlyPoints,
-    dailyLog,
-    weeklyHistory,
-    monthlyHistory,
-    streakCurrent,
-    streakBest,
-    lastActiveDate,
-    lastReset,
-  ]);
-
-  // ---------- reinicios inteligentes con pop-up ----------
-  useEffect(() => {
-    const now = new Date();
-    const last = lastReset ? new Date(lastReset) : null;
-
-    const isNewWeek = now.getDay() === 1; // lunes
-    const isNewMonth = now.getDate() === 1;
-
-    // Evitar spamear si ya se reseteó hoy
-    const alreadyToday =
-      last && last.toISOString().slice(0, 10) === now.toISOString().slice(0, 10);
-
-    if (!alreadyToday) {
-      if (isNewMonth) confirmReset("mes");
-      else if (isNewWeek) confirmReset("semana");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastReset]);
-
-  function confirmReset(type) {
-    const ok = window.confirm(
-      `¿Querés comenzar una nueva ${type === "mes" ? "mes" : "semana"}?`
-    );
-    if (!ok) return;
-
-    if (type === "semana") {
-      // archivar semana
-      setWeeklyHistory((h) => [
-        ...h,
-        { weekStart: new Date().toISOString(), total: weeklyPoints },
-      ]);
-      setWeeklyPoints(0);
-      setDailyPoints(0);
-      setDailyLog({});
-    } else {
-      // archivar mes
-      const monthLbl = new Date().toLocaleString("es-UY", {
-        month: "long",
-        year: "numeric",
-      });
-      setMonthlyHistory((h) => [...h, { month: monthLbl, total: monthlyPoints }]);
-      setMonthlyPoints(0);
-    }
-
-    setLastReset(todayISO());
-    // animación + sonido
-    setShowResetAnim(true);
-    setTimeout(() => setShowResetAnim(false), 2200);
-    playSound("/sound/soft-success.ogg", 0.7);
-    if ("vibrate" in navigator) navigator.vibrate(120);
-  }
-
-  // ---------- sumar puntos ----------
   function addPoints(pts) {
-    const key = todayKey();
-    const updatedLog = { ...dailyLog, [key]: (dailyLog[key] ?? 0) + pts };
-    setDailyLog(updatedLog);
-    setDailyPoints((p) => p + pts);
-    setWeeklyPoints((p) => p + pts);
-    setMonthlyPoints((p) => p + pts);
+    setDailyPoints(p => p + pts);
+    setWeeklyPoints(p => p + pts);
+    setMonthlyPoints(p => p + pts);
     setRecentGain(`+${pts}`);
-
-    // confeti + sonido
-    if (pts >= 10) playSound("/sound/success.ogg");
-    else playSound("/sound/pop.ogg");
-    confetti({ particleCount: 70, spread: 70, origin: { y: 0.7 } });
-
-    // rachas
-    updateStreak();
-
-    // recompensa semanal (100+)
-    const newWeekly = weeklyPoints + pts;
-    if (weeklyPoints < 100 && newWeekly >= 100) {
-      if ("vibrate" in navigator) navigator.vibrate(180);
-      setTimeout(() => alert(`🎉 ¡Objetivo semanal alcanzado!\n${reward}`), 400);
-    }
-
-    setTimeout(() => setRecentGain(null), 1000);
+    setTimeout(() => setRecentGain(null), 900);
   }
 
-  function playSound(src, vol = 0.4) {
-    const a = new Audio(src);
-    a.volume = vol;
-    a.play().catch(() => {});
-  }
-
-  // ---------- rachas (día a día) ----------
-  function updateStreak() {
-    const today = todayISO();
-    if (!lastActiveDate) {
-      setStreakCurrent(1);
-      setStreakBest(1);
-      setLastActiveDate(today);
-      return;
-    }
-    const last = new Date(lastActiveDate);
-    const diffDays = Math.floor(
-      (new Date(today) - new Date(last.toISOString().slice(0, 10))) /
-        (1000 * 60 * 60 * 24)
-    );
-
-    if (diffDays === 0) {
-      // mismo día, no cambia la racha
-      setLastActiveDate(today);
-      return;
-    }
-    if (diffDays === 1) {
-      const next = streakCurrent + 1;
-      setStreakCurrent(next);
-      setStreakBest(Math.max(streakBest, next));
-    } else {
-      // se cortó
-      setStreakCurrent(1);
-    }
-    setLastActiveDate(today);
-  }
-
-  // ---------- insights semanales ----------
-  const insights = useMemo(() => {
-    const vals = DAYS_LABELS.map((d) => dailyLog[d] || 0);
-    const totalWeek = vals.reduce((a, b) => a + b, 0);
-    const avg = Math.round(totalWeek / 7);
-    let bestIdx = -1;
-    let bestVal = -1;
-    vals.forEach((v, i) => {
-      if (v > bestVal) {
-        bestVal = v;
-        bestIdx = i;
-      }
-    });
-    const bestDay = bestVal > 0 ? DAYS_LABELS[bestIdx] : "—";
-
-    // recomendación simple
-    let tip = "Hoy podés sumar +10 con 2 hábitos simples (+5/+5).";
-    if (avg < 20) tip = "Tu promedio es bajo. Probá con 3 micro-acciones rápidas hoy.";
-    if (weeklyPoints >= 80 && weeklyPoints < 100)
-      tip = "Estás a un paso del objetivo semanal. Dos acciones y lo tenés 💥";
-    if (streakCurrent >= 3) tip = `Racha de ${streakCurrent} días. ¡Sostené el ritmo!`;
-
-    return { totalWeek, avg, bestDay, tip };
-  }, [dailyLog, weeklyPoints, streakCurrent]);
+  // ---------- INSIGHTS simples por etapa ----------
+  const insight = useMemo(() => {
+    if (!currentStage) return "";
+    if (stagePct >= 100) return "¡Etapa superada! Mantené el flujo 🔥";
+    if (stagePct >= 75) return "Estás muy cerca. Una acción más te acerca al salto.";
+    if (stagePct >= 40) return "Buen ritmo. Probá combinar dos micro-hábitos hoy.";
+    return "Empezá con uno fácil ahora. Activá el movimiento.";
+  }, [currentStage, stagePct]);
 
   return (
     <div className="app-container">
-      {/* Logo */}
+      {/* LOGO */}
       <img src="/icons/icon-192.png" alt="Diego+ logo" className="app-logo" />
 
-      {/* Puntos */}
+      {/* Héroe de Luz (entre logo y puntos) */}
+      {currentStage && (
+        <div className="stage-header">
+          <HeroAvatar level={currentStage.level} color={currentStage.color} name={currentStage.name} />
+          <div className="stage-chip" style={{ borderColor: currentStage.color }}>
+            <span style={{ color: currentStage.color }}>
+              Nivel {currentStage.level} · {currentStage.name}
+            </span>
+            <small>Meta etapa: {currentStage.target} pts</small>
+          </div>
+        </div>
+      )}
+
+      {/* DISPLAY DE PUNTOS */}
       <div className="points-display">
         <div className="daily-points">
           {dailyPoints}
@@ -271,7 +201,7 @@ export default function App() {
                 initial={{ opacity: 1, y: 0 }}
                 animate={{ opacity: 0, y: -28 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 1 }}
+                transition={{ duration: 0.9 }}
                 className="recent-gain"
               >
                 {recentGain}
@@ -282,24 +212,28 @@ export default function App() {
         <div className="points-subtitle">puntos de hoy</div>
         <div className="weekly-points">{weeklyPoints} pts en la semana</div>
 
-        {/* Barra de progreso hacia 100 semanales */}
-        <div className="progress-bar">
-          <div
-            className="progress-fill"
-            style={{
-              width: `${Math.min((weeklyPoints / 100) * 100, 100)}%`,
-              backgroundColor: weeklyPoints >= 100 ? "#FFD700" : "#4CAF50",
-            }}
-          />
-        </div>
+        {/* Progreso de la etapa actual */}
+        {currentStage && (
+          <>
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${stagePct}%`,
+                  backgroundColor: currentStage.color,
+                }}
+              />
+            </div>
+            <div className="stage-progress-label">
+              {stageProgressPoints}/{currentStage.target} pts · {stagePct}%
+            </div>
+            <div className="stage-insight">{insight}</div>
+          </>
+        )}
       </div>
 
-      {/* Botones de actividades */}
-      <motion.div
-        className="activity-grid"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
+      {/* BOTONES DE ACTIVIDAD */}
+      <motion.div className="activity-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         {activities.map((a) => (
           <motion.button
             key={a.label}
@@ -313,34 +247,24 @@ export default function App() {
         ))}
       </motion.div>
 
-      {/* Botonera inferior */}
+      {/* BOTONERA INFERIOR */}
       <div className="bottom-buttons">
         <button className="round-button" onClick={() => setShowSettings(true)}>
-          <Settings size={24} />
+          <Settings size={22} />
         </button>
         <button className="round-button" onClick={() => setShowProgress(true)}>
-          <BarChart3 size={24} />
+          <BarChart3 size={22} />
         </button>
         <button className="round-button" onClick={() => setShowMonthly(true)}>
-          <CalendarDays size={24} />
+          <CalendarDays size={22} />
         </button>
       </div>
 
-      {/* MODAL: Ajustes */}
+      {/* MODALES (placeholders, ya los tenías – mantenemos estilo) */}
       <AnimatePresence>
         {showSettings && (
-          <motion.div
-            className="modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="modal-content"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-            >
+          <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="modal-content" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
               <h2>⚙️ Ajustes</h2>
               <input
                 className="reward-input"
@@ -352,146 +276,32 @@ export default function App() {
                   localStorage.setItem("reward", e.target.value);
                 }}
               />
-              <button className="danger-btn"
-                onClick={() => {
-                  if (window.confirm("¿Borrar puntos de hoy?")) {
-                    setWeeklyPoints((w) => w - dailyPoints);
-                    const key = todayKey();
-                    setDailyLog((log) => ({ ...log, [key]: 0 }));
-                    setDailyPoints(0);
-                  }
-                }}
-              >
-                🗑️ Borrar puntos de hoy
-              </button>
-              <button className="modal-button" onClick={() => setShowSettings(false)}>
-                Cerrar
-              </button>
+              <button className="modal-button" onClick={() => setShowSettings(false)}>Cerrar</button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* MODAL: Evolución semanal */}
       <AnimatePresence>
         {showProgress && (
-          <motion.div
-            className="modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="modal-content"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-            >
-              <h2>📈 Evolución semanal</h2>
-
-              <div className="bars-container">
-                {DAYS_LABELS.map((d) => {
-                  const val = dailyLog[d] || 0;
-                  const h = Math.min(val, 110); // cap visual
-                  return (
-                    <div key={d} className="bar-group">
-                      <motion.div
-                        className="bar"
-                        initial={{ height: 0 }}
-                        animate={{ height: h }}
-                        transition={{ type: "spring", stiffness: 120, damping: 18 }}
-                      />
-                      <div className="bar-label">{d}</div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Insights */}
-              <div className="stats-box">
-                <div>Promedio: {insights.avg} pts/día</div>
-                <div>Mejor día: {insights.bestDay}</div>
-                <div>Racha actual: {streakCurrent} días</div>
-                <div className="tip">{insights.tip}</div>
-              </div>
-
-              <button className="modal-button" onClick={() => setShowProgress(false)}>
-                Cerrar
-              </button>
+          <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="modal-content" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
+              <h2>📈 Evolución</h2>
+              <p>Próxima iteración: histórico real de 7 días aquí.</p>
+              <button className="modal-button" onClick={() => setShowProgress(false)}>Cerrar</button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* MODAL: Balance mensual */}
       <AnimatePresence>
         {showMonthly && (
-          <motion.div
-            className="modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="modal-content"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-            >
+          <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="modal-content" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
               <h2>📅 Balance general</h2>
               <p>Total del mes: {monthlyPoints} pts</p>
-              <p>Promedio diario (30d): {Math.round(monthlyPoints / 30)} pts</p>
-              <p>Racha más larga: {streakBest} días 🔥</p>
-
-              <button
-                className="modal-secondary"
-                onClick={() => setShowHistoryMore((v) => !v)}
-              >
-                {showHistoryMore ? "Ocultar ▲" : "Mostrar histórico ▼"}
-              </button>
-
-              <AnimatePresence>
-                {showHistoryMore && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="stats-box"
-                  >
-                    {monthlyHistory.length === 0 && <p>Sin meses archivados aún.</p>}
-                    {monthlyHistory.map((m, i) => (
-                      <p key={i}>
-                        {m.month}: {m.total} pts
-                      </p>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <button className="modal-button" onClick={() => setShowMonthly(false)}>
-                Cerrar
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Animación reinicio */}
-      <AnimatePresence>
-        {showResetAnim && (
-          <motion.div
-            className="reset-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="reset-message"
-              initial={{ scale: 0.85 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.6 }}
-            >
-              ✨ Nueva semana, nuevas oportunidades
+              <p>Meta diaria base: {GOAL_PER_DAY} pts</p>
+              <button className="modal-button" onClick={() => setShowMonthly(false)}>Cerrar</button>
             </motion.div>
           </motion.div>
         )}
