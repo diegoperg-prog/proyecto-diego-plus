@@ -106,3 +106,38 @@ button:active {
 .bg-zinc-900:hover {
   background: linear-gradient(145deg, #222, #151515);
 }
+
+/* 🎮 HERO SPRITESHEET ANIMACIÓN */
+.hero-sprite {
+  width: 128px; /* Ajustá según el tamaño de cada frame */
+  height: 128px; /* Debe ser igual al alto de un frame */
+  background-image: url('/hero_idle.png'); /* Nombre del archivo en /public */
+  background-repeat: no-repeat;
+  background-size: 800%; /* 8 frames → 100% * 8 */
+  animation: heroIdle 1s steps(8) infinite;
+  image-rendering: pixelated;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 180, 0.5));
+}
+
+/* ✨ ANIMACIÓN tipo Street Fighter */
+@keyframes heroIdle {
+  from { background-position: 0 0; }
+  to { background-position: -800% 0; }
+}
+
+/* 🌟 Efecto “energía luminosa” */
+.hero-sprite::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255,255,180,0.25) 0%, transparent 80%);
+  animation: heroAura 2s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes heroAura {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
